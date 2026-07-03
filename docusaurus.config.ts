@@ -11,8 +11,8 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://docs.enclava.dev',
-  baseUrl: '/',
+  url: 'https://enclava-labs.github.io',
+  baseUrl: '/enclava-dev-docs/',
 
   organizationName: 'enclava-labs',
   projectName: 'enclava-dev-docs',
