@@ -15,7 +15,7 @@ const config: Config = {
   baseUrl: '/',
 
   organizationName: 'enclava-labs',
-  projectName: 'platform-docs',
+  projectName: 'enclava-dev-docs',
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -32,7 +32,7 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/',
-          editUrl: 'https://github.com/enclava-labs/platform-docs/tree/main/enclava-dev-docs/',
+          editUrl: 'https://github.com/enclava-labs/enclava-dev-docs/tree/main/',
         },
         blog: false,
         theme: {
