@@ -27,3 +27,7 @@ sidebar_position: 2
 **`enclava-init`**: Runtime sidecar that runs inside the guest and verifies the trust chain before releasing readiness.
 
 **Stable SSH endpoint**: PaaS-reserved `host:port` contract for hosted SSH templates.
+
+**`tee_error`**: Failure reason surfaced by `enclava status` when `enclava-init` cannot complete startup, so a failed deploy states its cause without pod access.
+
+**`cc_init_data`**: Confidential-guest init-data measurement committed by the deployment descriptor and re-verified by `enclava-init` at startup; binds the expected sidecar configuration into the runtime trust chain.

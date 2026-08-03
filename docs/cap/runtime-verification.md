@@ -23,7 +23,7 @@ Any mismatch fails startup before seeds, mounted state, or TLS material are rele
 
 Password mode receives the owner password over the local unlock socket, rate-limits failed attempts, derives the owner seed with Argon2id, and supports recovery flows.
 
-Auto-unlock mode fetches wrap material through the local Kata confidential-data-hub resource endpoint. It still runs the same verification path before seed release.
+Auto-unlock mode fetches wrap material through the local Kata confidential-data-hub resource endpoint. It still runs the same verification path before seed release. Auto-unlock assumes an owner seed already established by a prior password-mode claim — a first deploy in auto mode has no seed to fetch, waits through bounded retries, and fails. Use password mode for the first deploy, then `enclava auto-unlock enable --image <image@digest>` to seal the seed for restarts.
 
 ## Readiness handoff
 
