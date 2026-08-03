@@ -29,7 +29,7 @@ enclava rollback [--to DEPLOYMENT_ID]
 enclava destroy [--app APP] [--force]
 ```
 
-`deploy` requires a digest-pinned image. `--storage-password-file` claims ownership on first deploy (password mode) and unlocks on restart. `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate`.
+`deploy` requires a digest-pinned image. `--storage-password-file` claims ownership on first deploy (password mode) and unlocks on restart. `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --key-id <id>`.
 
 ## Config and secrets
 
@@ -55,12 +55,12 @@ enclava template ssh-command --name shell --wait [--json]
 enclava claim [--app APP]
 enclava unlock [--app APP]
 enclava recover [--mnemonic-file PATH] [--new-password-file PATH]
-enclava change-password
+enclava change-password [--app APP]
 enclava auto-unlock enable --image IMAGE@DIGEST
-enclava auto-unlock disable
+enclava auto-unlock disable --image IMAGE@DIGEST
 enclava key status
 enclava key backup --out enclava-recovery.json
-enclava key restore
+enclava key restore <backup-file> [--force]
 ```
 
 Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`; the standalone commands cover the interactive path. Back up recovery material right after the first deploy.
