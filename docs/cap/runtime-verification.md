@@ -25,6 +25,27 @@ Password mode receives the owner password over the local unlock socket, rate-lim
 
 Auto-unlock mode fetches wrap material through the local Kata confidential-data-hub resource endpoint. It still runs the same verification path before seed release. Auto-unlock assumes an owner seed already established by a prior password-mode claim — a first deploy in auto mode has no seed to fetch, waits through bounded retries, and fails. Use password mode for the first deploy, then `enclava auto-unlock enable --image <image@digest>` to seal the seed for restarts.
 
+## Recovery and stale escrow
+
+The recovery mnemonic (BIP39, shown once at claim) is an **independent second unwrap
+path** on the owner-seed envelope stored in the KBS — it is not a copy of the password.
+`enclava recover --app <app> --mnemonic-file <file> --new-password-file <file>` unwraps
+the seed via the mnemonic and re-wraps it under a new password. Two operational rules:
+
+- **Recovery requires a freshly-booted *locked* TEE.** Against a long-running pod it
+  returns `recovery_requires_locked_init_verifier` — restart the pod (delete it; the
+  StatefulSet recreates it) and retry.
+- **`destroy` only clears the KBS escrow if the pod is alive.** The in-guest proxy
+  deletes the escrow on teardown, best-effort. If the app was already dead when you
+  destroyed it, the escrow survives — and a newly created app with the same name
+  **inherits it**: claim returns `already_claimed`, and every unlock lands as a silent
+  wrong-password (`state=locked`, `error=null`). The failure signature is a
+  `seed-encrypted` KBS fetch seconds after pod start, before any claim. Fix: recover
+  with the *old* app's mnemonic, which still matches the surviving envelope.
+
+Data volumes (PVCs) are deleted by destroy regardless of pod health — only the key
+material survives, so a recreated app starts with empty storage unlocked by old keys.
+
 ## Readiness handoff
 
 The generated runtime uses:
