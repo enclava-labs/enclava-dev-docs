@@ -84,7 +84,9 @@ permissions:
   packages: write      # push to GHCR
 steps:
   - uses: docker/build-push-action@v6       # build + push by digest
-  - uses: sigstore/cosign-installer@v3
+  - uses: sigstore/cosign-installer@v4      # cosign 3.x — CAP requires DSSE referrers
+                                           # bundles; 2.x legacy `.sig` tags are
+                                           # rejected as `portable_verification_material_unavailable`
   - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
 ```
 
