@@ -42,9 +42,9 @@ Key properties worth explaining to users:
 - **Freshness by nonce**: each live verification is a new challenge; old evidence
   can't be served again. A saved `--bundle` is *historical* evidence of a past state,
   clearly distinct.
-- **Measurement, not correctness**: a passing verification proves *which* code and
-  configuration booted — not that the code is bug-free or honest. A measured bug is
-  still a bug.
+- **Identity, not correctness**: a passing verification identifies the guest launch
+  state and separately validates the authorized image artifact, configuration, and
+  deployment bindings. It does not show that the app is bug-free or honest.
 - **Fail-closed**: if the chain can't be completed (bad signature, stale revocation,
   missing endorsement), verification fails rather than downgrades. That is the
   trustworthy behavior.
@@ -56,16 +56,23 @@ workflow:
 
 1. `enclava describe <origin> --policy-skeleton draft.json` — emits a
    `enclava-trust-policy-v1` skeleton from observed values (trust-on-first-use).
-2. **Edit the draft before trusting it.** The skeleton is derived from what the target
-   just showed you, so a compromised target could have shaped it. **Independently
-   verify every trust anchor the skeleton copied from the observation** — not just
-   the obvious pins. That includes `amd.allowed_measurements`, the sigstore block
-   (identities/issuers you'll accept as image signers), `amd.trusted_ark_sha256`
-   (compare against AMD's published ARK), `target.image_digests` (compare against
-   the digest you built/expect), and equally `trusted_org_keyring_sha256` and
-   `trusted_policy_signing_pubkeys` — the org keyring and policy-signing keys are
-   anchors the target selected for you, and copying them unverified inherits
-   whatever the target chose.
+2. **Edit the draft before trusting it.** The target supplies every observed value,
+   so independently authenticate all of them rather than approving the generated file
+   wholesale:
+   - AMD/runtime claims: `amd.allowed_measurements`, `amd.minimum_tcb`,
+     `amd.guest_policy_mask`/`guest_policy_value`, and
+     `amd.trusted_ark_sha256` (compare the ARK with AMD's published root).
+   - Expected target and deployment: origins, image digests, runtime classes,
+     attestation-proxy and Caddy digests, platform-release versions, organization IDs,
+     and application IDs. Compare them with release records, builds, and identities
+     obtained outside the target.
+   - Target-presented authority: `trusted_org_keyring_sha256` and
+     `trusted_policy_signing_pubkeys`. Copying these unverified inherits whatever
+     authority the target selected.
+   The skeleton cannot infer your Sigstore trust policy: every Sigstore value is a
+   `REPLACE_WITH_…` placeholder. Populate the Fulcio roots/hashes, Rekor key,
+   certificate identity, OIDC issuer, source repository, workflow ref, and provenance
+   builder ID from independent sources.
 3. Record the final policy **via a channel the target cannot influence** (e.g. checked
    into *your* repo) — then verify with it. Note the limits of that step: it preserves
    the policy after selection but authenticates nothing; the values are only as
@@ -77,11 +84,9 @@ workflow:
    changes change the launch measurement — a TCB bump does not by itself imply a new
    measurement (and vice versa).
 
-A pinned policy typically encodes: allowed launch measurements, minimum TCB levels,
-guest policy value, trusted ARK hash, allowed origins, image digests, runtime class,
-platform sidecar digests, platform release versions, org/application IDs, trusted
-keyring and policy-signing keys, and the sigstore identities. Copy from a known-good
-example rather than authoring from scratch when possible.
+A pinned policy encodes those launch, runtime, artifact, identity, and authority
+expectations plus revocation limits and required checks. Use a known-good example only
+for schema shape; source every trust value independently.
 
 ## Practical guidance
 

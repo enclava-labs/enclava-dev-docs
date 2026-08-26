@@ -21,9 +21,8 @@ Tenant logs are end-to-end encrypted — the platform cannot read them. To strea
 
 ```bash
 enclava login --approve-logs                          # grant this CLI session log access
-enclava log-key generate --key-id logs-laptop-2026q3  # tenant-held X25519 key; private
-                                                      # key written locally, only the
-                                                      # public key is registered
+enclava log-key generate --app NAME --key-id logs-laptop-2026q3
+# tenant-held X25519 key: private key stays local; only the public key is registered
 # (re)deploy so the app is bound to the key — or select an existing one at deploy time
 enclava logs --app NAME -f --log-private-key-file <private-key-file>
 ```
@@ -34,18 +33,18 @@ losing log access (data itself is unaffected).
 ## Config secrets
 
 ```bash
-enclava config set API_TOKEN=...   # multiple KEY=VALUE pairs allowed. NOTE: no --app
-                                    # here — set resolves the app from local
-                                    # enclava.toml only (get/unset do take --app),
-                                    # so hosted apps can't be addressed by set
-enclava config get [--app NAME]     # lists key NAMES only
-enclava config unset API_TOKEN [--app NAME]
+enclava config set FEATURE_FLAG=enabled  # multiple KEY=VALUE pairs; no --app
+                                          # resolves local enclava.toml only
+enclava config get [--app NAME]           # lists key NAMES only
+enclava config unset FEATURE_FLAG [--app NAME]
 ```
 
-Values are delivered direct to the TEE after boot and never leave it — `config get`
-cannot print them back. For deploy-time delivery prefer
-`deploy --set-file KEY=PATH` over `--set` so secrets stay out of process arguments
-and shell history.
+`config set` has no file-input form: its values appear in the local process arguments
+and may enter shell history, so do not use it for sensitive plaintext. For a manual OCI
+app, prefer `deploy --set-file KEY=PATH`; hosted apps currently have no `config set`
+path because they have no local `enclava.toml`. Values sent through either supported
+path travel directly from the CLI to the attested TEE; the control plane does not
+persist or return their plaintext.
 
 ## Custom domains
 
@@ -75,11 +74,12 @@ enclava destroy --app NAME [--force]
 
 ## Ownership, recovery, key hygiene (password mode)
 
-The mnemonic is an **independent second unwrap path** on the owner seed — not a copy
-of the password. Practical rules:
+The mnemonic is an independent recovery representation of the owner seed — not a
+copy of the password. Practical rules:
 
-1. **After the first deploy/claim**: `enclava key backup --out enclava-recovery.json`,
-   stored outside the repo. Verify with `enclava key status` what's covered locally.
+1. **After the first deploy/claim**:
+   `enclava key backup --out "$HOME/.enclava/my-app-recovery.json"`. Verify with
+   `enclava key status` what's covered locally.
 2. **Lost password, have mnemonic**:
    ```bash
    enclava recover --app NAME --mnemonic-file M --new-password-file P
@@ -95,19 +95,20 @@ of the password. Practical rules:
    app *inherits* it — claim fails `already_claimed`, unlocks silently land
    wrong-password (`TEE: locked`, no error). Fix: `recover` with the **old** app's
    mnemonic. Prevent: prefer destroying while the app is healthy.
-5. **Unattended restarts**: `enclava auto-unlock enable --image <img>@sha256:<digest>`
-   (seed wrapped for KBS-attestation-gated release, not TEE-hardware-sealed);
-   `disable` to go back to password-on-restart. Both need the
-   digest-pinned image because they bind it into a signed redeploy descriptor.
+5. **Unattended restarts (manual OCI apps only)**:
+   `enclava auto-unlock enable --image <img>@sha256:<digest>` wraps the seed for
+   KBS-attestation-gated release; `disable` returns to password-on-restart. Both need
+   the digest-pinned image and local `enclava.toml` to build a signed redeploy
+   descriptor. Hosted template apps cannot switch modes with the current CLI.
 
 If both password and mnemonic are gone, the encrypted volume is unrecoverable by
 design — the platform cannot help; say so plainly rather than suggesting tricks.
 
 ## What not to reach for
 
-- There is no CLI path to read config values back (they never leave the TEE) and no
-  platform-side "reset" for owner secrets. Anything promising otherwise is a
-  misunderstanding of the trust model.
+- There is no CLI path to read config plaintext back; the control plane does not store
+  it, and there is no platform-side "reset" for owner secrets. Anything promising
+  otherwise is a misunderstanding of the trust model.
 - A verification/attestation failure that blocks startup is the system working as
   designed — diagnose the named cause (`tee_error`, signature mismatch, policy), don't
   hunt for a bypass.

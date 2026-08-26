@@ -1,19 +1,20 @@
 # Journey: deploy a custom OCI image (manual CAP path)
 
 For teams running their own container image. If a hosted template already fits the
-workload, that path (`../hosted-template.md`) is much less work.
+workload, that path (`hosted-template.md`) is much less work.
 
 ## Prerequisites
 
-- An Enclava account and org (`enclava login`; `signup` to create).
+- An Enclava account and org (`enclava login`; hosted registration is browser-based,
+  while standalone CAP exposes `signup`).
 - The `enclava` CLI on PATH.
 - Docker + a registry (examples use GHCR) and a `Dockerfile` in the repo root.
 
 ## 1. Scaffold
 
 ```bash
-enclava init        # interactive: detects Dockerfile + EXPOSE, writes enclava.toml
-                    # and .github/workflows/enclava-deploy.yml (build-and-sign CI)
+enclava init        # interactive: detects Dockerfile + EXPOSE when present (otherwise
+                    # suggests port 3000); writes enclava.toml and the build/sign CI
 enclava prepare     # same scaffolding without prompts — first run only. When either
                     # output file already exists it prompts to update (dialoguer),
                     # and a non-TTY run exits "not a terminal". There is no
@@ -57,8 +58,8 @@ paths = []
 
 ## 2. Meet the image contract
 
-The workload runs on a **read-only rootfs** inside the confidential guest, so the
-image side has hard requirements:
+The workload runs on a **read-only rootfs** inside the confidential guest. The
+relevant image contract and optional scaffolding metadata are:
 
 | Requirement | Why |
 | --- | --- |
@@ -77,25 +78,69 @@ CMD ["python3", "/app/server.py"]
 
 ## 3. Build and sign (cosign, keyless via GitHub Actions)
 
-CAP admits an image only after verifying its cosign signature. The intended path is
-**keyless signing with GitHub OIDC**: GitHub issues a short-lived Fulcio certificate,
-cosign signs the digest, Rekor records it. No signing key to manage.
+CAP requires both portable cosign signature material and a bound provenance manifest.
+The intended path is **keyless signing with GitHub OIDC**: GitHub issues a short-lived
+Fulcio certificate, cosign signs the digest, Rekor records it, and GitHub publishes
+build provenance. No signing key to manage.
 
-The starter workflow from `init`/`prepare` builds, pushes to GHCR, and signs on push
-to `main`. The essentials (if your generated workflow still pins
-`cosign-installer@v3` — whose default cosign is 2.5.2 — bump it to the pinned v4
-release below):
+The starter workflow from `init`/`prepare` builds, pushes, signs, and attests on each
+push to `main`. Older generated workflows may still pin `cosign-installer@v3`; replace
+that step with the pinned v4.1.2 commit below. This is the minimum complete flow:
 
 ```yaml
+name: Build signed image
+
+on:
+  push:
+    branches: [main]
+
 permissions:
-  id-token: write      # GitHub OIDC → Fulcio certificate for cosign
-  packages: write      # push to GHCR
-steps:
-  - uses: docker/build-push-action@v6
-  - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2 — installs cosign 3.x, which signs
-                                            # with portable DSSE material (REQUIRED; pin an immutable SHA or a
-                                            # real v4.x tag — there is no floating `@v4` ref)
-  - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Install cosign
+        # v4.1.2 — immutable pin; installs cosign 3.x
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+
+      - name: Sign image
+        run: >-
+          cosign sign --yes
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
 ```
 
 The workflow prints a ready-to-run `enclava deploy --image <image>@<digest>` line at
@@ -141,7 +186,7 @@ confirmation token).
 ```bash
 enclava deploy \
   --image ghcr.io/<org>/<repo>@sha256:<digest> \
-  --storage-password-file ./storage-password
+  --storage-password-file "$HOME/.enclava/my-app-storage-password"
 ```
 
 - `--storage-password-file` makes the first deploy **claim ownership and unlock
@@ -158,7 +203,7 @@ enclava deploy \
 
 ```bash
 enclava status     # expect: Status: running, TEE: unlocked, Unlock: unlocked
-enclava key backup --out enclava-recovery.json   # immediately; store outside the repo
+enclava key backup --out "$HOME/.enclava/my-app-recovery.json"
 ```
 
 If deploys will be unattended (restarts without a human), consider
@@ -170,7 +215,7 @@ password-mode first deploy succeeded.
 | Symptom | Fix |
 | --- | --- |
 | `tee_error: … (os error 30)` read-only bind | Missing `VOLUME` for a `storage.paths` entry — add it, redeploy. |
-| `portable_verification_material_unavailable` | CAP found no portable (DSSE) signature material. Most common: cosign 2.x legacy `.sig` — re-sign with cosign 3.x (pinned `cosign-installer@v4.x`). Registry/referrer fetch errors, missing provenance, malformed bundles, and size limits share this code — inspect the signature and provenance objects on the digest. |
+| `portable_verification_material_unavailable` | CAP could not assemble portable signature/provenance material. One common cause is a cosign 2.x legacy `.sig` object without portable DSSE material; re-signing with the generated cosign 3.x workflow fixes that case. Registry/referrer errors, missing provenance, malformed bundles, and size limits share this code — inspect both signature and provenance objects. |
 | Deploy rejected on signature/identity | Signer subject doesn't match what signed the image — check workflow filename/branch in the subject, re-run the `cosign verify` above. |
 | First deploy in auto mode fails | Expected — current CLIs reject it up front at `create`; older CLIs fail at boot after ~a minute. Either way: `[unlock] mode` must be `password` for the first deploy. |
 | `Status: drifted`, later deploys no-op | `enclava destroy --app <name> --force`, then `create` + `deploy` from clean (destroy first — the app name and escrow interact; see the day-2 reference before recreating with the same name). |

@@ -1,7 +1,7 @@
 ---
 name: enclava-concepts
-description: Explain how Enclava and confidential computing actually work — TEEs, SEV-SNP, remote attestation, proof bundles, encrypted storage, who can read what, and what the technology honestly does and does not protect against. Use whenever the user asks conceptual or trust questions about enclava or confidential computing ("can the operator see my data?", "what does attestation prove?", "what's a TEE/SEV-SNP/proof bundle?", "is my app really encrypted?"), or is evaluating whether to trust the platform.
-compatibility: enclava CLI v0.1.x (concepts are stable across CLI versions)
+description: Explain how Enclava and confidential computing work — TEEs, SEV-SNP, remote attestation, proof bundles, encrypted storage, who can read what, and honest protection limits. Use for conceptual or trust questions ("can the operator see my data?", "what does attestation prove?", "what's a TEE/SEV-SNP/proof bundle?", "is my app encrypted?"). For running an appraisal use enclava-verify; for deployment and lifecycle commands use enclava.
+compatibility: Enclava platform and CLI v0.1.x
 ---
 
 # Enclava and confidential computing — the accurate mental model
@@ -38,28 +38,32 @@ bindings on their own. The complete appraisal combines both: guest measurement
 plus signed-artifact checks establish that the exact code you authorized booted —
 not that the code is bug-free or honest.
 
-**3. The trust chain has two gates.** (a) *Image identity*: the image must be
-cosign-signed (typically keyless via GitHub OIDC→Fulcio→Rekor) and the signer
-identity is pinned per app — so only authorized identities can publish deployable
-code. (b) *Runtime measurement*: attestation binds the booted guest to the expected
-measurement, policies, and configuration. Both must pass before secrets or state are
-released; failure blocks startup (fail-closed by design).
+**3. The trust chain has two gates.** (a) *Image identity*: a custom image must carry
+portable cosign signature and bound provenance material (typically keyless via GitHub
+OIDC→Fulcio→Rekor), and the signer identity is pinned per app — so only authorized
+identities can publish deployable code. (b) *Runtime measurement*: attestation binds
+the booted guest to the expected measurement, policies, and configuration. Both must
+pass before secrets or state are released; failure blocks startup (fail-closed by
+design).
 
-**4. Storage is encrypted with owner-held keys — the platform cannot read app data.**
-Persistent storage is a LUKS volume inside the guest (app data and TLS state are
-separate encrypted volumes). In password mode the **owner seed** is derived from the
-owner's password (Argon2id) — the platform never sees the password or the seed. A
-BIP39 **recovery mnemonic** is an independent second unwrap path on the seed
-(not a copy of the password). Auto-unlock wraps the seed so the KBS releases it
-only to a guest that passes attestation (**KBS-attestation-gated wrapping** — not
-VMPCK hardware sealing; SNP launch-derived keys aren't stable across pod recreation)
-for unattended restarts. Lose both password and mnemonic → the data is gone, by design;
-there is no platform backdoor.
+**4. Storage is encrypted with owner-controlled key material.** Persistent storage is
+a LUKS volume inside the guest (app data and TLS state are separate encrypted volumes).
+At password-mode claim, the TEE generates a random 32-byte **owner seed**. Argon2id and
+HKDF derive a password wrapping key that encrypts that seed; the volume keys derive
+from the seed itself. The control plane and KBS never receive the plaintext password or
+seed. A BIP39 **recovery mnemonic** is an independent representation of the same seed,
+not a copy of the password. Auto-unlock stores another encrypted seed envelope that KBS
+releases only to a guest passing attestation (**KBS-attestation-gated wrapping**, not
+VMPCK hardware sealing) for unattended restarts. A password-mode app with no usable
+password or recovery copy has no platform backdoor; auto-unlock is not a substitute for
+an owner backup.
 
-**5. Verification is fresh, not cached.** A live verification fetches a proof bundle
-from `/.well-known/confidential/proof-bundle?nonce=<random>` — the report inside is
-bound to that nonce, so evidence cannot be replayed or prefabricated. Endorsements
-(VCEK) chain up to AMD's ARK root, which the verifier pins. (See the `enclava-verify`
+**5. The live report is nonce-fresh; supporting material may be cached.** A live
+verification fetches a proof bundle from
+`/.well-known/confidential/proof-bundle?nonce=<random>` — the SNP report inside is
+bound to that nonce, so an old report cannot satisfy the new challenge. Endorsements
+such as the VCEK may be cached; their signatures, chain to the pinned AMD ARK, TCB
+binding, and freshness policy are appraised separately. (See the `enclava-verify`
 skill for the operational side.)
 
 **6. The operator stays in the threat model for availability and metadata.** The
@@ -75,11 +79,12 @@ fails rather than degrading. If a user reports a failure of this shape, the righ
 move is to read the named cause (e.g. `tee_error` via `enclava status`), not to hunt
 for a bypass.
 
-**8. Trusted computing base is named, not magic.** Trust ultimately rests on: AMD
-SEV-SNP firmware (the TCB levels attested), the measured guest stack, the pinned
-platform release (sidecar images, policies), the cosign identities you authorize,
-and your own password/mnemonic hygiene. Each is explicit and inspectable — nothing
-rests on "the platform says trust us".
+**8. Trusted computing base is named, not magic.** Trust ultimately rests on AMD's
+attestation roots and SEV-SNP TCB, the measured guest stack, the pinned platform
+release and policy authorities, KBS appraisal, the artifact identities you authorize,
+and your owner credentials. Independent verification matters: target-presented keys,
+measurements, and identities become trust anchors only after you authenticate them
+through a channel the target cannot control.
 
 ## Vocabulary quick-reference
 
@@ -102,20 +107,25 @@ rests on "the platform says trust us".
 
 ## Answering common doubts (calibrated)
 
-- *"Can Enclava/the operator read my app's data?"* — No: memory is hardware-encrypted,
-  storage keys are derived from your password (never sent to the platform), config
-  values never leave the TEE. They *can* see metadata and control scheduling.
-- *"What if AMD/Enclava pushes a bad firmware?"* — Firmware is part of the attested
-  TCB; verification pins expected TCB levels and measurements, so an unexpected change
-  fails closed rather than silently trusted. You decide which levels to accept.
+- *"Can Enclava/the operator read my app's data?"* — In password mode, no: memory is
+  hardware-encrypted; a random owner seed derives the storage keys and is stored only
+  in password-wrapped form. Runtime config travels directly from the client to the
+  attested TEE rather than being persisted as control-plane plaintext. Operators can
+  still see metadata and control scheduling.
+- *"What if AMD/Enclava pushes firmware?"* — Firmware TCB and launch measurement are
+  separate policy dimensions. `minimum_tcb` is a component-wise lower bound, so a TCB
+  increase can pass without changing the measurement; a downgrade below the minimum
+  fails. Accept new values only after checking the release and your policy.
 - *"Is my app safe if the image is signed?"* — Signing pins *who* published it, not
   whether it's good. A malicious image signed by an identity you authorized is out of
   scope — review what you pin.
-- *"Where do secrets live?"* — Delivered direct to the TEE post-attestation; readable
-  only inside the guest. `enclava config get` lists key names only.
-- *"What does the proof bundle prove?"* — That this origin, serving this TLS cert,
-  booted this measured code/TCB, signed by this chip — *at verification time*
-  (nonce-bound). Not code correctness.
+- *"Where do secrets live?"* — Delivered directly from the client to the TEE after
+  attestation; the control plane does not persist or return their plaintext.
+  `enclava config get` lists key names only.
+- *"What does the proof bundle prove?"* — Its nonce-bound SNP report identifies the
+  guest launch measurement and TCB for that live challenge. Policy checks separately
+  bind the origin/TLS channel, authorized image artifact and signer/provenance,
+  platform release, and deployment identity. It does not prove code correctness.
 
 When a question goes deeper than these, point at the docs' concepts and threat-model
 pages rather than improvising — the honest edges (DoS, metadata, signed-but-malicious

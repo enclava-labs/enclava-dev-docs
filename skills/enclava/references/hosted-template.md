@@ -50,20 +50,21 @@ or unexpected username is rejected rather than shown. Use `--json` when scriptin
 enclava status --app shell
 ```
 
-Hosted apps have no local `enclava.toml`, so `--app` is how you address them for all
-app-scoped commands (`status`, `logs --app`, `destroy --app`, …).
+Hosted apps have no local `enclava.toml`. For commands that support `--app` — such as
+`status`, `logs`, `unlock`, `recover`, and `destroy` — pass the hosted name explicitly.
+Not every app operation supports that flag: `config set` and `auto-unlock` always load
+local `enclava.toml`, so they cannot address hosted apps; generic `deploy` is not a
+hosted restart command.
 
 ## Notes and limits
 
-- The user provides **only** SSH public keys; everything platform-managed (endpoint,
-  relay creds) stays server-side.
-- Password-mode template apps follow the same unlock state machine as the spine —
-  restarts need `unlock` (or `deploy --storage-password-file`), recovery works the
-  same way. Back up the mnemonic after the first claim.
+- The user supplies the SSH public key plus owner choices such as the storage password
+  or log key. Platform-managed endpoint and relay credentials stay server-side.
+- Password-mode template apps follow the same ownership and recovery state machine as
+  manual apps. After a restart, run `enclava unlock --app shell`; back up the mnemonic
+  after the first claim.
 - Unlock mode is **fixed by the template definition** — `debian-ssh-frp` is password
-  mode, and the CLI exposes no unlock-mode flag (there is no deploy-time choice).
-  Restarts need `enclava unlock --app shell` (or a redeploy with
-  `--storage-password-file`).
+  mode, with no deploy-time or current post-deploy switch to auto-unlock.
 - SSH lands in the workload's `web` container — a minimal device namespace. Absent
   `/dev/sev*` or sparse `lsblk` output there is a namespace artifact, not a fault;
   `enclava status` is the authoritative state.
