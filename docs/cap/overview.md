@@ -27,7 +27,7 @@ enclava init
 enclava create --signer-subject <cosign-subject>
 enclava deploy --image <registry>/<image>@sha256:<digest>
 enclava status
-enclava key backup --out enclava-recovery.json
+enclava key backup --out "$HOME/.enclava/my-app-recovery.json"
 ```
 
 The image must be digest-pinned. The signer subject should match the identity that signs the image, such as a GitHub Actions keyless cosign subject.

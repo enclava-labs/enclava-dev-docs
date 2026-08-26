@@ -4,17 +4,17 @@ sidebar_position: 3
 
 # CAP CLI Reference
 
-The `enclava` CLI drives CAP and the hosted PaaS flows. Run `enclava <command> --help` for the authoritative flag list.
+The `enclava` CLI drives CAP and the hosted PaaS flows. Use `enclava <command> --help` to discover current flags; for executable or security-sensitive behavior, observed behavior and the current implementation are authoritative.
 
 ## Account and context
 
 ```bash
-enclava login [--api-url URL] [--no-browser] [--org ORG] [--approve-logs] [--nostr] [--email]
+enclava login [--api-url URL] [--no-browser] [--org ORG] [--approve-logs]
 enclava whoami
 enclava logout
 ```
 
-`login` defaults to the hosted browser device flow. Use `--api-url` to target a standalone CAP instance, `--no-browser` for headless approval, or `--org` to scope the session. `--approve-logs` grants the CLI session hosted workload-log access.
+`login` defaults to the hosted browser device flow. Use `--api-url` to target a standalone CAP instance, `--no-browser` for headless approval, or `--org` to scope the session. `--approve-logs` grants the CLI session hosted workload-log access. Direct `signup`, `login --nostr`, and `login --email` use standalone CAP endpoints; hosted PaaS authentication uses the browser/device flow.
 
 ## App lifecycle
 
@@ -24,20 +24,24 @@ enclava prepare                                    # write enclava.toml + CI sig
 enclava create [--image IMAGE] --signer-subject SUBJECT [--signer-issuer URL]
 enclava deploy --image IMAGE@DIGEST [--set KEY=VALUE] [--set-file KEY=PATH] [--storage-password-file PATH]
 enclava status [--app APP]
-enclava logs [-f] [--log-private-key-file PATH]
+enclava logs [--app APP] [-f] [--log-private-key-file PATH]
 enclava rollback [--to DEPLOYMENT_ID]
 enclava destroy [--app APP] [--force]
 ```
 
-`deploy` requires a digest-pinned image. `--storage-password-file` claims ownership on first deploy (password mode) and unlocks on restart. `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --key-id <id>`.
+`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on first deploy (password mode) and unlocks during a manual OCI redeploy. `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`.
 
 ## Config and secrets
 
 ```bash
-enclava config set KEY=VALUE ...
-enclava config get        # lists key names; values never leave the TEE
-enclava config unset KEY
+enclava config set FEATURE_FLAG=enabled  # local enclava.toml only; no --app
+enclava config get [--app APP]            # lists names, never plaintext values
+enclava config unset KEY [--app APP]
 ```
+
+Inline `config set` values may appear in process listings and shell history. Use
+`deploy --set-file KEY=PATH` for sensitive values on manual OCI apps; hosted apps
+currently have no `config set` path.
 
 ## Hosted templates
 
@@ -54,12 +58,12 @@ enclava template ssh-command --name shell --wait [--json]
 ```bash
 enclava claim [--app APP]
 enclava unlock [--app APP]
-enclava recover [--mnemonic-file PATH] [--new-password-file PATH]
+enclava recover [--app APP] [--mnemonic-file PATH] [--new-password-file PATH]
 enclava change-password [--app APP]
-enclava auto-unlock enable --image IMAGE@DIGEST
-enclava auto-unlock disable --image IMAGE@DIGEST
+enclava auto-unlock enable --image IMAGE@DIGEST   # manual OCI app; local enclava.toml
+enclava auto-unlock disable --image IMAGE@DIGEST  # manual OCI app; local enclava.toml
 enclava key status
-enclava key backup --out enclava-recovery.json
+enclava key backup --out "$HOME/.enclava/my-app-recovery.json"
 enclava key restore <backup-file> [--force]
 ```
 
