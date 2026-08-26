@@ -21,7 +21,7 @@ From the repository root:
 enclava init
 ```
 
-`init` detects the `Dockerfile` and its `EXPOSE` port, prompts for an app name and port, and writes both `enclava.toml` and `.github/workflows/enclava-deploy.yml` (a build-and-sign workflow). `enclava prepare` is the non-interactive equivalent — idempotent, it writes the same files and prompts before overwriting existing ones, so it suits CI pipelines.
+`init` detects the `Dockerfile` and its `EXPOSE` port, prompts for an app name and port, and writes both `enclava.toml` and `.github/workflows/enclava-deploy.yml` (a build-and-sign workflow). `enclava prepare` writes the same files without prompts on a first run; when either file already exists it prompts before overwriting (and a non-TTY run fails with "not a terminal" — there is no `--yes`/`--force`). For CI: run `prepare` once, commit both files, and don't re-run it over them.
 
 The generated config:
 
@@ -70,7 +70,7 @@ VOLUME ["/data"]
 CMD ["python3", "/app/server.py"]
 ```
 
-If the app needs no persistent storage, omit `storage.paths` and the `VOLUME`.
+There is no "no storage" default: with `[storage]` absent, CAP still defaults `paths = ["/data"]`. If the app needs no persistent storage, set `paths = []` explicitly and skip the `VOLUME`.
 
 ## Build and sign the image
 
@@ -84,9 +84,13 @@ permissions:
   packages: write      # push to GHCR
 steps:
   - uses: docker/build-push-action@v6       # build + push by digest
-  - uses: sigstore/cosign-installer@v4      # cosign 3.x — CAP requires DSSE referrers
-                                           # bundles; 2.x legacy `.sig` tags are
-                                           # rejected as `portable_verification_material_unavailable`
+  - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2 — installs
+                                           # cosign 3.x; CAP requires portable DSSE
+                                           # material (pin an immutable SHA or a real
+                                           # v4.x tag — there is no floating `@v4` ref).
+                                           # cosign 2.x legacy `.sig` is the most common
+                                           # cause of `portable_verification_material_unavailable`,
+                                           # though registry/provenance/size errors share the code
   - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
 ```
 

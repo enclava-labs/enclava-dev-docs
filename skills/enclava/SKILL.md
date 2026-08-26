@@ -64,8 +64,10 @@ Auto-unlock (for unattended restarts):
 
 - A **first deploy must be password mode** — auto mode has no owner seed yet to seal
   and fails at boot. Deploy password-first, then:
-  `enclava auto-unlock enable --image <image>@sha256:<digest>` (seals the owner seed
-  with VMPCK; binds the digest into a signed redeploy descriptor).
+  `enclava auto-unlock enable --image <image>@sha256:<digest>` (wraps the owner
+  seed for **KBS-attestation-gated release** — the KBS hands the wrapped seed only
+  to a guest that passes attestation; not TEE-hardware-sealed. Also binds the
+  digest into a signed redeploy descriptor).
   `enclava auto-unlock disable --image <image>@sha256:<digest>` reverts to
   password-on-restart.
 
@@ -80,7 +82,7 @@ still matches the surviving envelope.
 | Area | Commands |
 | --- | --- |
 | Auth | `login [--api-url] [--no-browser] [--org] [--approve-logs] [--nostr] [--email]`, `signup`, `whoami`, `logout` |
-| Scaffold | `init` (interactive, needs a Dockerfile), `prepare` (non-interactive, CI-friendly) |
+| Scaffold | `init` (interactive, needs a Dockerfile), `prepare` (non-interactive *first* run only — on existing output files it prompts, which dies non-TTY; no `--yes` yet) |
 | Deploy | `create [--image] [--signer-subject] [--signer-issuer]`, `deploy --image IMG@DIGEST [--set K=V] [--set-file K=PATH] [--storage-password-file PATH]` |
 | Observe | `status [--app]`, `logs [--app] [-f] [--log-private-key-file PATH]`, `log-key generate/list/select/revoke` |
 | Config | `config set K=V…`, `config get` (names only — values never leave the TEE), `config unset K` |
@@ -111,7 +113,7 @@ app's trust properties, use `enclava-verify`.
 | --- | --- |
 | Deploy stalls; `status` shows `tee_error: … Read-only file system (os error 30)` | A `storage.paths` entry isn't a `VOLUME` in the image → add `VOLUME`, redeploy. |
 | First deploy in auto mode fails | Expected — must deploy password-mode first. |
-| `portable_verification_material_unavailable` | Image signed with cosign 2.x legacy `.sig` — re-sign with cosign 3.x (`sigstore/cosign-installer@v4`). |
+| `portable_verification_material_unavailable` | CAP couldn't fetch portable (DSSE) signature material. Most common cause: cosign 2.x legacy `.sig` — re-sign with cosign 3.x (pinned `cosign-installer@v4.x` release). But the same code covers registry/referrer errors, missing provenance, malformed bundles, and size limits — inspect the signature + provenance objects on the digest before concluding. |
 | `status` shows `Status: drifted` after a failed deploy | Follow-up deploys won't roll — `destroy --app <name> --force`, then `create` + `deploy` clean. |
 | Claim returns `already_claimed` on a *new* app | Stale escrow (see above) — recover with the old mnemonic. |
 | `destroy` returns `app mutation already in progress` (409) | An in-flight deployment holds the mutation lease — wait for it to finish (check `status`), then retry. |

@@ -38,12 +38,15 @@ that project's skill directory the same way.
 
 ## Conventions
 
-- **Accuracy over prose.** Every command, flag, and failure signature here is checked
-  against the `enclava` CLI and the developer docs. When the CLI changes, these must
-  be swept: run `enclava <cmd> --help` against each command named in a skill and fix
+- **Accuracy over prose.** Every command, flag, and failure signature here must match
+  the real `enclava` CLI behavior — not just its `--help` text. Help prose and the
+  human docs are useful pointers but can drift from the implementation: for
+  executable claims (flags accepted, defaults applied, error-code causes, pinned
+  refs), verify against actual behavior or the CLI's argument definitions/source,
+  and cite that in the PR. When the CLI changes, sweep the named commands and fix
   drift as part of the release.
 - **Compatibility.** Skills target the CLI version noted in each skill's frontmatter.
-  `enclava --help` output is the tiebreaker for any discrepancy.
+  Observed CLI behavior is the tiebreaker for any discrepancy.
 - **Docs stay canonical for concepts** (`docs/concepts/`, `docs/reference/glossary.md`);
   skills carry the procedural layer and restating of command-level facts, and link out
   for depth.
@@ -55,6 +58,8 @@ that project's skill directory the same way.
 
 ## Contributing
 
-Fixes welcome via PR. Claims must be verifiable against `enclava <cmd> --help`, the
-behavior of the current CLI, or the developer docs — cite which in the PR description.
+Fixes welcome via PR. Claims must be verifiable against the behavior of the current
+CLI (preferred — reproduce it), its argument definitions/source, or the developer
+docs — cite which in the PR description. `--help` text alone is not sufficient for
+executable claims; it has drifted from behavior before.
 New failure signatures should come from a reproduced incident, not speculation.

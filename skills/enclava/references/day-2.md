@@ -34,9 +34,12 @@ losing log access (data itself is unaffected).
 ## Config secrets
 
 ```bash
-enclava config set API_TOKEN=... [--app NAME]   # multiple KEY=VALUE pairs allowed
-enclava config get                              # lists key NAMES only
-enclava config unset API_TOKEN
+enclava config set API_TOKEN=...   # multiple KEY=VALUE pairs allowed. NOTE: no --app
+                                    # here — set resolves the app from local
+                                    # enclava.toml only (get/unset do take --app),
+                                    # so hosted apps can't be addressed by set
+enclava config get [--app NAME]     # lists key NAMES only
+enclava config unset API_TOKEN [--app NAME]
 ```
 
 Values are delivered direct to the TEE after boot and never leave it — `config get`
@@ -93,7 +96,8 @@ of the password. Practical rules:
    wrong-password (`TEE: locked`, no error). Fix: `recover` with the **old** app's
    mnemonic. Prevent: prefer destroying while the app is healthy.
 5. **Unattended restarts**: `enclava auto-unlock enable --image <img>@sha256:<digest>`
-   (VMPCK-sealed seed); `disable` to go back to password-on-restart. Both need the
+   (seed wrapped for KBS-attestation-gated release, not TEE-hardware-sealed);
+   `disable` to go back to password-on-restart. Both need the
    digest-pinned image because they bind it into a signed redeploy descriptor.
 
 If both password and mnemonic are gone, the encrypted volume is unrecoverable by

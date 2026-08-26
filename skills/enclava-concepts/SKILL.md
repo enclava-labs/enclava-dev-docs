@@ -31,8 +31,11 @@ isolation layer around an app you still have to engineer and trust.
 
 **2. Attestation proves *what* booted, not *that it's correct*.** The TEE produces
 signed evidence (an SNP report bound to a fresh nonce) about the guest's identity,
-launch measurement, and TCB. Verifiers compare it against expected values. If the
-measurement matches the image/policy you pinned, you know that exact code booted —
+launch measurement, and TCB. Verifiers compare it against expected values. The
+launch measurement pins the *guest launch state*; the OCI image is appraised
+separately — CAP checks the image digest and its cosign/Sigstore/provenance
+bindings on their own. The complete appraisal combines both: guest measurement
+plus signed-artifact checks establish that the exact code you authorized booted —
 not that the code is bug-free or honest.
 
 **3. The trust chain has two gates.** (a) *Image identity*: the image must be
@@ -47,8 +50,10 @@ Persistent storage is a LUKS volume inside the guest (app data and TLS state are
 separate encrypted volumes). In password mode the **owner seed** is derived from the
 owner's password (Argon2id) — the platform never sees the password or the seed. A
 BIP39 **recovery mnemonic** is an independent second unwrap path on the seed
-(not a copy of the password). Auto-unlock seals the seed to the TEE (VMPCK) for
-unattended restarts. Lose both password and mnemonic → the data is gone, by design;
+(not a copy of the password). Auto-unlock wraps the seed so the KBS releases it
+only to a guest that passes attestation (**KBS-attestation-gated wrapping** — not
+VMPCK hardware sealing; SNP launch-derived keys aren't stable across pod recreation)
+for unattended restarts. Lose both password and mnemonic → the data is gone, by design;
 there is no platform backdoor.
 
 **5. Verification is fresh, not cached.** A live verification fetches a proof bundle

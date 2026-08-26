@@ -32,7 +32,6 @@ Useful flags:
 | `--no-wait` / `--ssh-timeout-seconds N` | Don't block on endpoint readiness (default waits up to 600s). |
 | `--storage-password-file PATH` | Password-mode storage, non-interactive claim/unlock (same semantics as the OCI path). |
 | `--log-key KEY_ID` / `--generate-log-key KEY_ID` | Bind org log-encryption to this deploy (see day-2 for the logs ceremony). |
-| `--stable-ssh-endpoint HOST:PORT` | Import an existing reserved endpoint instead of allocating one. |
 
 ## 3. Get the SSH command
 
@@ -61,8 +60,10 @@ app-scoped commands (`status`, `logs --app`, `destroy --app`, …).
 - Password-mode template apps follow the same unlock state machine as the spine —
   restarts need `unlock` (or `deploy --storage-password-file`), recovery works the
   same way. Back up the mnemonic after the first claim.
-- Templates currently cannot switch unlock mode after creation (password↔auto) —
-  choose at deploy time.
+- Unlock mode is **fixed by the template definition** — `debian-ssh-frp` is password
+  mode, and the CLI exposes no unlock-mode flag (there is no deploy-time choice).
+  Restarts need `enclava unlock --app shell` (or a redeploy with
+  `--storage-password-file`).
 - SSH lands in the workload's `web` container — a minimal device namespace. Absent
   `/dev/sev*` or sparse `lsblk` output there is a namespace artifact, not a fault;
   `enclava status` is the authoritative state.

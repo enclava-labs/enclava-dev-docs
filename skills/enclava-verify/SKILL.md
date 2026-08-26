@@ -23,7 +23,7 @@ enclava verify --bundle saved-bundle.bin --policy trust-policy.json [--json]   #
   to run against anything.
 - **`verify`** appraises: every check in the policy must pass. `--json` emits the
   canonical result schema (for CI); `--save-bundle` captures the exact live bytes as
-  historical evidence (the bundle format is content-addressed media type
+  historical evidence (the bundle format is the versioned media type
   `application/vnd.enclava.proof-bundle.v1`).
 
 ## What a live verification does
@@ -57,15 +57,25 @@ workflow:
 1. `enclava describe <origin> --policy-skeleton draft.json` — emits a
    `enclava-trust-policy-v1` skeleton from observed values (trust-on-first-use).
 2. **Edit the draft before trusting it.** The skeleton is derived from what the target
-   just showed you, so a compromised target could have shaped it. Especially review:
-   `amd.allowed_measurements`, the sigstore block (identities/issuers you'll accept as
-   image signers), `amd.trusted_ark_sha256` (compare against AMD's published ARK),
-   and `target.image_digests` (compare against the digest you built/expect).
+   just showed you, so a compromised target could have shaped it. **Independently
+   verify every trust anchor the skeleton copied from the observation** — not just
+   the obvious pins. That includes `amd.allowed_measurements`, the sigstore block
+   (identities/issuers you'll accept as image signers), `amd.trusted_ark_sha256`
+   (compare against AMD's published ARK), `target.image_digests` (compare against
+   the digest you built/expect), and equally `trusted_org_keyring_sha256` and
+   `trusted_policy_signing_pubkeys` — the org keyring and policy-signing keys are
+   anchors the target selected for you, and copying them unverified inherits
+   whatever the target chose.
 3. Record the final policy **via a channel the target cannot influence** (e.g. checked
-   into *your* repo) — then verify with it.
+   into *your* repo) — then verify with it. Note the limits of that step: it preserves
+   the policy after selection but authenticates nothing; the values are only as
+   trustworthy as the independent verification in step 2 made them.
 4. Iterate: `enclava verify <origin> --policy p.json --json` reports each check;
-   adjust pins that are legitimately expected to change (new firmware TCB → new
-   measurement) consciously, never by blanket-copying observed values.
+   adjust pins consciously, never by blanket-copying observed values. TCB and
+   measurement are **separate policy dimensions**: firmware updates can change the
+   reported TCB (`minimum_tcb` is a component-wise lower bound), while guest/runtime
+   changes change the launch measurement — a TCB bump does not by itself imply a new
+   measurement (and vice versa).
 
 A pinned policy typically encodes: allowed launch measurements, minimum TCB levels,
 guest policy value, trusted ARK hash, allowed origins, image digests, runtime class,
