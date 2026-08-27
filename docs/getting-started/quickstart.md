@@ -10,7 +10,21 @@ The fastest path is to use the hosted CLI flow against Enclava PaaS. This gives 
 
 - An Enclava account and organization.
 - The `enclava` CLI from the CAP project or a release artifact.
+- Rust 1.85 or newer when building the CLI from source.
 - For SSH templates, an SSH public key such as `~/.ssh/id_ed25519.pub`.
+
+## Install the CLI
+
+Use a release artifact when one is available. To build the current CLI from source on Debian or Ubuntu (including WSL):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y pkg-config libssl-dev
+export ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX=5b9437adeaffbe8f41b13d96ed49d2f51cd6c266cd8ecc284b0552ec4912b8dd
+cargo install --git https://github.com/enclava-labs/cap --locked enclava-cli
+```
+
+`ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX` is a public verification key, not a secret. It pins the platform-release signing root accepted by the CLI.
 
 ## Log in
 
