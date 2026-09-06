@@ -85,6 +85,17 @@ def main():
         except (OSError, ValueError):
             return {'http_status': 0}
 
+    def https_status():
+        # Owned disposable app only. Never forward PaaS authentication headers.
+        url = f'https://{args.name}.0a9e784d.dev.enclava.work/healthz'
+        try:
+            with opener.open(urllib.request.Request(url), timeout=2) as response:
+                return response.status
+        except urllib.error.HTTPError as error:
+            return error.code
+        except (OSError, ValueError):
+            return 0
+
     before = status()
     assert before['http_status'] == 404, 'fresh-name check failed (must be authenticated 404)'
     print(json.dumps({'at': now(), 'name': args.name, 'preflight': before}), flush=True)
@@ -98,7 +109,7 @@ def main():
                '--name', args.name, '--ssh-public-key-file', str(BASE / 'bootstrap/ssh/id_ed25519.pub'),
                '--storage-password-file', str(BASE / 'bootstrap/storage-password'),
                '--ssh-timeout-seconds', '1800', '--timings', '--json']
-    with (output / 'stdout.json').open('xb') as stdout, (output / 'stderr.log').open('xb') as stderr, (output / 'api-status.jsonl').open('x') as samples:
+    with (output / 'stdout.json').open('xb') as stdout, (output / 'stderr.log').open('xb') as stderr, (output / 'api-status.jsonl').open('x') as samples, (output / 'https-status.jsonl').open('x') as https_samples:
         start = time.monotonic()
         started_at = now()
         process = subprocess.Popen(command, stdout=stdout, stderr=stderr, env=env)
@@ -111,15 +122,20 @@ def main():
             samples.write(json.dumps(sample) + '\n')
             samples.flush()
             running = sample.get('http_status') == 200 and sample.get('app_status') == 'running'
+            public_status = https_status()
+            https_samples.write(json.dumps({'at': now(), 'elapsed_ms': (time.monotonic()-start)*1000,
+                                           'http_status': public_status}) + '\n')
+            https_samples.flush()
             after_exit = time.monotonic() - exit_seen if exit_seen is not None else 0
-            if observation_done(exit_code, running, after_exit):
+            if observation_done(exit_code, running and public_status == 200, after_exit):
                 break
             time.sleep(2)
         result = {'name': args.name, 'started_at': started_at, 'finished_at': now(),
                   'elapsed_ms': (time.monotonic()-start)*1000, 'exit_code': process.returncode,
                   'cli_exit_observed_ms': (exit_seen-start)*1000,
                   'api_running_at_finish': running,
-                  'convergence_timed_out': exit_code == 0 and not running}
+                  'https_ok_at_finish': public_status == 200,
+                  'convergence_timed_out': exit_code == 0 and not (running and public_status == 200)}
         # Wrapper elapsed includes API convergence observation (up to 300s tail),
         # not deployment duration. CLI monotonic total remains authoritative.
         (output / 'run.json').write_text(json.dumps(result, indent=2) + '\n')
