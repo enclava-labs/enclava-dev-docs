@@ -64,8 +64,11 @@ DNS is therefore not the only startup stage. Application readiness and the
 remaining init/managed-delivery bottlenecks still require separate measurement.
 
 Strict SSH host-key verification after initial TOFU passed. The deployment
-observer finished with exit code zero at 14:28:42.036086 UTC. Cleanup verification
-is pending at this checkpoint.
+observer finished with exit code zero at 14:28:42.036086 UTC. Normal destroy
+exited zero. At 14:30 UTC, the exact disposable namespace, PVs
+`7f9e2c96-421c-4a91-96bf-f8bb6342124e` and
+`cd5542ad-6cfd-4443-bced-70d8d7b5a891`, and their matching Longhorn volumes
+were verified absent.
 
 ## Measurement safety
 
