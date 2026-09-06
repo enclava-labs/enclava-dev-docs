@@ -43,6 +43,21 @@ scheduling needs preservation of actual observation timestamps, startup/failure
 semantics, wallet locks/fences, and checkout freshness. A longer healthy-cache TTL
 is not an approved optimization.
 
+Devin CLI SWE-1.7 independently traced the scheduling boundary. Health probes
+hold the same PostgreSQL advisory transaction fence used by Spark destination
+and readback dispatch. Those dispatches participate in the outbox phase's join,
+so a blocked payment can still delay a whole worker tick. Health and tick
+finalization also currently write one combined heartbeat snapshot consumed by
+internal health, metrics and checkout readiness. A direct background-task move
+would introduce competing snapshot writers and wallet contention.
+
+A future split therefore needs explicit ownership of independently timestamped
+health observations, unchanged consumer freshness/failure checks, lifecycle and
+cancellation tests, and a tested contention policy. A try-lock only avoids
+waiting to acquire an already-busy fence; it does not prevent a probe that already
+holds the fence from delaying a later payment. No new table, background SDK
+session, persistent wallet cache or scheduling change has been implemented.
+
 ## Next execution gates
 
 1. Complete and verify the signed workflow-dispatch release, exact source binding,
