@@ -31,6 +31,12 @@ source annotations, so none are claimed. [Ops #154](https://github.com/enclava-l
 contains the DEV promotion. Review caught stale README provenance, now corrected
 for both current API and already-live PaaS images. DEV-only server dry-run,
 environment contracts, kustomize render and contained-rollout regressions passed.
+Ops #154 merged as `e1490cb` after exact-head CI `34057250453` passed and the
+reviewer marked the provenance finding resolved. Flux applied it without a
+manual reconcile. New API pod `cap-api-b698456cb-pjwkp`, UID
+`f0c3b1fe-ed33-4ad4-bb51-e557fe985fa4`, is ready with zero restarts on the exact
+digest; migration Job succeeded on the same image. Readiness reports ten checks.
+Fresh normal-auth baseline P started at 20:17:13 UTC with the unchanged O CLI.
 
 ## Public-name control from ordinary CAP API pod
 
@@ -68,3 +74,68 @@ strict settings parsing and non-disclosure of answer/error contents in timing.
 Actual Devin CLI SWE-1.7 trace and Pi CLI GLM-5.3 review were used. Pre-existing
 ACME cleanup/parser concerns were noted separately, not silently changed. Zero
 propagation wait skips only the local visibility wait, not ACME validation.
+
+## Instrumented baseline P
+
+Normal-auth CLI completed successfully in **174.390 s**, and the runner observed
+API running plus verified HTTPS by **178.944 s**. Bootstrap took 86.099 s,
+ownership 0.925 s and managed-config wait 61.710 s. Worker evidence includes six
+423 responses and one KDS429; those durations are separate from broker stages.
+
+Exactly one broker request (pod `cap-api-b698456cb-pjwkp`, sequence1) completed:
+
+| Nested broker phase | Duration / outcome |
+| --- | --- |
+| External DNS lookup | **15.003 s, error** |
+| System DNS lookup | **0.034 s, success** |
+| DNS visibility (encloses lookups) | 15.038 s, success |
+| ACME order-ready | 1.082 s, success |
+| ACME finalize | 0.853 s, success |
+| Certificate retrieval | 0.538 s, success |
+| Broker total (encloses all phases) | **19.573 s, success** |
+
+This confirms an avoidable 15-second external lookup before the already-working
+system resolver. It does not establish that DNS caused every earlier long init
+interval. Exact-token matching and ACME validation still succeeded normally.
+
+The subsequent real SSH check **failed with a connection reset before auth**,
+after a default multi-key `ssh-keyscan` had recorded one host key. Cleanup then
+ran, so this attempt cannot be retried on P and is not counted as SSH success.
+Metadata shows one pod UID, zero restarts and continuous Ready after 20:20:02
+until deletion. Template readiness checks the public banner, not authentication;
+probe contention is only a hypothesis, not a diagnosed cause.
+
+Normal destruction exited zero. At 20:23:54 UTC, authenticated lookup was404;
+the exact namespace, PVs `pvc-caea7fd3-249a-4c0b-a514-1abb26325dde` and
+`pvc-5f846cd9-1895-442e-919f-6b0939b94278`, and matching Longhorn volumes
+were absent. Exact metadata/DB observers stopped. Repeat R started at20:23:56
+on the same image, with a real SSH-first TOFU check followed by strict pinned
+verification planned; it will be retained until verification finishes.
+
+After full current-head CI/review and the DNS evidence, CAP #104 merged as
+`bbcaa7b028b651c71842dfdba427e029ca634c98`. Signed release dispatch
+`34057766213`, tag `manual-20260906-dev-acme-dns-settings`, is in progress.
+The SSH uncertainty is being checked independently; this fix changes no relay
+or SSH behavior. No fixed-image DEV speedup is claimed yet.
+
+## Repeat R: baseline confirmation and SSH verification
+
+R completed CLI in **188.505 s**, and API running/verified HTTPS by194.532s.
+Bootstrap87.025s, ownership18.390s, managed wait57.222s. Its broker sequence2
+independently repeated **15.003s failed external lookup**, then119ms successful
+system lookup; broker total20.031s. The two baselines isolate the DNS floor
+despite differing total/ownership times.
+
+First real SSH used normal TOFU (`accept-new`, fresh private known-hosts file,
+changed keys rejected) and passed without a preceding key scan. A second
+connection passed with strict saved-host-key verification. One bounded broad
+key-scan followed by another strict connection also passed. Thus the single P
+reset did not reproduce; no server-limit or host-key policy change is justified.
+TOFU is not an attestation-bound SSH host-key proof.
+
+R was retained until all checks finished, then normal destruction exited zero.
+At20:30:45 UTC authenticated lookup returned404; namespace, PVs
+`pvc-754188e4-2251-4dc5-98fc-c666b62550a9` and
+`pvc-7b9fb763-783e-486b-b6bd-718a7ac4ea3c`, and matching Longhorn volumes
+were absent. The original canary still had its original UID, four ready
+containers and zero restarts. R's exact metadata observer was stopped.
