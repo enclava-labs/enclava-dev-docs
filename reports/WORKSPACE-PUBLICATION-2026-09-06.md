@@ -37,8 +37,12 @@ identified private-key header strings were negative test fixtures, not keys.
 This is a scoped publication review, not proof that all historical code is secure.
 
 Excluded from publication: plaintext credentials, private evidence/backups,
-generated Python bytecode, and 17 retained local stashes pending separate review.
-No stash was applied or deleted. The workspace root is not a Git repository;
+generated Python bytecode, and two sensitive PaaS stashes. Of the 17 retained
+stashes, 13 reviewed snapshots were separately published as `archive/20260906/stash-*`;
+two were already fully content-redundant remotely. Original stash merge parents
+were not pushed. One old docs-only snapshot was placed on current main ancestry
+to avoid importing 150 unreviewed historical commits. All original stashes remain
+local; none was applied or deleted. The workspace root is not a Git repository;
 other root-level files and raw test-results were not bulk imported. Only the
 reviewed speed summary above was copied into this existing documentation repo.
 
