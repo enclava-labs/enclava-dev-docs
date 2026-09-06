@@ -88,16 +88,65 @@ status/IP fields and finite nonnegative timing metadata. Raw stderr and response
 bodies are not published. No private evidence files, credentials or keys are
 included in this report. Preprod was not accessed or changed.
 
-## Mitigation and outstanding validation
+## Mitigation applied and fresh deployment verified
 
-An infrastructure PR is being prepared to manage a DEV-specific wildcard DNS
-record pointing directly at the verified DEV worker, with narrowly scoped DNS
-record ownership. It has **not** been applied at this checkpoint. Keep CAP's
-exact app records and certificate verification intact; do not alter the global
-parking wildcard or preprod as a shortcut.
+[Infrastructure PR #35](https://github.com/enclava-labs/enclava-infra/pull/35)
+merged reviewed head `b1746e7` as `caaa93c` at 14:46:13 UTC. The generic optional
+DNS-only name list defaults empty; only DEV enables `*.dev.enclava.work`.
+Existing exact CAP records remain intact. The wildcard is not added to gateway
+routes or certificate SANs. Exact-name lookup rejects conflicting, duplicate,
+malformed or unsuccessful responses; all names are validated before create-only
+operations. Existing healthy records are no-ops. There are no PATCH/DELETE paths.
 
-After reviewed application, allow old positive answers to expire and run a fresh
-normal-auth K experiment with concurrent ordinary-DNS and pinned probes. Compare
-actual HTTPS usability, not just pod readiness or CLI completion, then verify
-SSH, normal deletion, exact disposable storage removal and the preserved canary.
-Run K has **not** been performed. No post-fix improvement is claimed yet.
+At **14:47:13.841 UTC**, a bounded API operation created only the absent
+`*.dev.enclava.work` A record to `13.140.128.15`, unproxied, TTL 300.
+Exact reread passed and parent wildcard metadata was unchanged. The full
+infrastructure playbook was **not** rerun. No preprod access or changes occurred.
+Old cached parking answers can still live until expiry; K used a fresh name
+that had not been queried before activation.
+
+Validation: 27 local tests passed, including localhost Ansible evaluation of
+the actual production expressions (23 inspection cases and eight create-response
+cases). Both CI checks passed on the reviewed head. All PR comments were read;
+Devin's GitHub review reported no issues and independent native review found no
+blockers. Actual Devin CLI SWE-1.7 assisted the implementation. Pi GLM-5.3
+completed the observer review, but its supplemental infrastructure review did
+not return and was canceled; it is **not** counted as infrastructure approval.
+
+Fresh normal-auth run K began **14:48:03.528458 UTC**. Ordinary DNS reached the
+worker from its first request. Both probe modes first returned verified HTTPS
+200 in the same sampling round at **14:51:39.881 UTC**:
+
+| User-visible milestone | Before: J | After: K |
+| --- | ---: | ---: |
+| Ordinary-DNS verified HTTPS 200 | 298.092 s | 216.353 s |
+| Pinned-worker verified HTTPS 200 | 207.103 s | 216.353 s |
+| DNS-versus-pinned first-success gap | 90.989 s | <0.001 s |
+
+Observed ordinary-DNS improvement: **81.739 seconds, 27.4%**. These are single
+before/after deployments, not a distribution or an SLA. The simultaneous probes
+demonstrate removal of the extra DNS delay in K; app startup itself was about
+nine seconds slower than J's pinned baseline. Probe spacing limits precision.
+
+K CLI completed successfully in **211.717 seconds**. API first reported running
+at 185.307 seconds, showing why API status alone is insufficient. The runner
+finished at 217.140 seconds with API running and HTTPS successful. Real SSH
+login passed through `relay.enclava.me:31012`, retaining strict host-key checking
+after initial TOFU. TLS verification, attestation and ownership checks were not
+disabled or changed.
+
+K phase timings still identify work left to investigate: deploy request 14.326 s,
+bootstrap wait 82.770 s, ownership 18.363 s, managed-config enqueue 0.184 s,
+managed-config wait 84.370 s, customer-config attestation 0.584 s, customer-config
+write 0.080 s, and SSH readiness 5.366 s. Do not add caches or weaken security
+gates based on these aggregates; next isolate the bootstrap and managed-delivery
+critical paths with existing bounded metadata instrumentation.
+
+Normal deletion exited zero after SSH verification. Authenticated lookup
+returned 404 at **14:54:07.338 UTC**. At **14:55:13 UTC**, the exact disposable
+namespace, PVs `pvc-61a349e0-80e2-42b2-bf68-b58bb37b094e` and
+`pvc-a3efb2d2-0241-4906-a361-07743bb17a4e`, and matching Longhorn volumes
+were absent. The original canary retained UID
+`90f0d6c1-fab7-44ef-9cec-942ea1058efd`, all four containers ready and zero
+restarts. Platform readyz remained ready with ten checks. The exact K metadata
+observer was stopped; no disposable workload or storage was retained for proof.
