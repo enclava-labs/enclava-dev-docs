@@ -1,5 +1,7 @@
 #!/bin/sh
-# Feed to the init container's `sh -s` on stdin. No arguments or path overrides.
+# OFFLINE CANDIDATE ONLY: current Kata policy rejects shell exec. Do not broaden
+# the policy to run this; use a reviewed built-in metadata interface instead.
+# No arguments or path overrides.
 # CAP enclava-init defaults: canonical marker contents are one line plus newline.
 # Conservative: missing, noncanonical, symlink or unreadable markers are unknown/false.
 set +x
