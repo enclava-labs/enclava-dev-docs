@@ -270,7 +270,16 @@ security prerequisite. Passing this DEV test does not close that gap.
 
 ## Next controlled measurement
 
-The companion collector is [PaaS #94](https://github.com/enclava-labs/enclava-paas/pull/94).
+The producer is [CAP #103](https://github.com/enclava-labs/cap/pull/103),
+head `80df3fd`; the companion collector is
+[PaaS #94](https://github.com/enclava-labs/enclava-paas/pull/94), head `1439ddd`.
+Both are committed/pushed and remain open for CI/review; neither has been
+promoted. Producer validation passed 407 API library tests on an isolated local
+database, the focused enabled/disabled/redaction/cancellation test, all-target
+clippy and formatting. Actual Devin CLI SWE-1.7 review found no blockers.
+An initial full-suite invocation omitted the dedicated database setting and
+used the built-in local test fixture; it was rerun against an isolated database.
+Only the isolated rerun is cited as verification; no environment DB was involved.
 Independent review caught acceptance of non-u64 broker durations; the collector
 now rejects fractional/exponent/out-of-range values while preserving existing
 CLI/worker float compatibility. The producer uses an explicitly parentless
