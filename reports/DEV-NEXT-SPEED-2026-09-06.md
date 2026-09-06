@@ -1,6 +1,6 @@
 # Next deployment-speed investigation — 2026-09-06
 
-## Current checkpoint — run G complete, 12:10 UTC
+## Current checkpoint — run H verified and cleaned up, 12:23 UTC
 
 [PaaS PR91](https://github.com/enclava-labs/enclava-paas/pull/91) merged as
 `d009631ecc108fd9941b596096d6edad3677b41d`. Its signed release
@@ -22,8 +22,55 @@ no raw denial output is published.
 [CAP PR99](https://github.com/enclava-labs/cap/pull/99) merged as
 `f1cd1e0e4c7f541b3f7c91f3da31a419b610de45`; build
 [34031244839](https://github.com/enclava-labs/cap/actions/runs/34031244839)
-is the associated release build. Its DEV promotion PR is being prepared;
-that CAP change has **not** been promoted to DEV and did not affect run G.
+is the associated release build. [Ops PR152](https://github.com/enclava-labs/enclava-ops-manifests/pull/152)
+merged as `4c315c9775c6ed5d025be28a321325b3b9fff278` at 12:15:06 UTC,
+after checks passed on exact head `e093cde002e428d7c512d2994db1d7d53e7505fe`.
+Devin GitHub review and actual Pi CLI GLM-5.3 review passed. Flux applied this
+DEV promotion; CAP API UID `549e724c-9167-432f-b029-836db664d76a` was verified
+on the intended image ID (digest prefix `deaef44`), and migration 46's Job
+succeeded. This change affected run H, not G. Preprod remains untouched.
+
+## Run H: earlier declared readiness, unchanged HTTPS wait
+
+Fresh normal-auth run H started at 12:16:42.260209 UTC after the CAP promotion.
+The new pod (`144aae93-9a41-4cfd-a1fc-b05c95d18a83`) confirmed the intended
+readiness checks: web port 8080 every 10 seconds and ingress port 10443 every
+15 seconds, with initial delay defaulting to zero. Init and proxy checks were
+unchanged.
+
+| Measurement | G | H |
+| --- | ---: | ---: |
+| CLI completion | 214.430 s | 211.446 s |
+| Pod Ready after run start | 269.803 s | 187.740 s |
+| First API running sample | 278.381 s | 191.153 s |
+| First external HTTPS 200 sample | 301.378 s | 301.255 s |
+| Managed-delivery window | 80.636 s | 80.531 s |
+| Early HTTP 423 write rejections | 9 | 10 |
+| Payment-health passes in delivery window | 2 | 2 |
+| Ownership phase | 18.434 s | 18.389 s |
+
+H's pod became Ready at 12:19:50 UTC, about 82 seconds earlier relative to
+run start than G; API running was observed about 87 seconds earlier. Strict
+SSH host-key verification after initial TOFU passed. However, first HTTPS 200
+remained at approximately 301 seconds: there is **no observed material HTTPS
+speedup**. These are two individual runs and sampling bounds, not a controlled
+distribution or exact transition times. CLI completion alone still overstates
+how quickly the app becomes fully reachable.
+
+The repeated approximately five-minute HTTPS result needs separate investigation
+of permitted TLS, gateway and certificate metadata. It does not establish a
+specific timer or root cause. H's bootstrap wait was 82.157 seconds and its CLI
+managed-config wait was 84.254 seconds; initialization readiness and worker
+scheduling remain distinct bottlenecks. The roughly 18-second ownership phase
+also repeated, versus F's 0.945 seconds. Do not sum these nested measurements.
+
+H's normal destroy exited zero. At 12:23 UTC the exact disposable namespace,
+PVs `ff3e1c0b-be74-4592-b374-cf19cb1e4b30` and
+`f3127bf1-1c60-49f1-af33-1f8bf9ec5610`, and corresponding Longhorn volumes
+were absent. Authenticated lookup returned 404 at 12:23:35.110 UTC; public
+readiness reported ready with 10 checks. The preserved canary's exact UID was
+unchanged, with all four containers ready and zero restarts. Deployment and
+cleanup checks are complete.
 
 ## Run G: measured outcome
 
@@ -142,16 +189,18 @@ the simpler in-loop monitoring cadence described below.
 
 ## Remaining execution gates
 
-1. Verify the CAP PR99 release and separately review its DEV promotion before
-   applying it. Do not attribute CAP changes to run G.
-2. Repeat a fresh normal-auth deployment after promotion. Use the versioned
-   timing filter and analyzer, check pipeline exit status, and observe actual
-   SSH/HTTPS, public running and pod readiness beyond CLI exit. Repeat normal
-   deletion and exact storage/canary checks. Never collect customer pod logs.
-3. Separate the initialization gate, ownership variance and five-second worker
-   scheduling floor using permitted metadata, then select the smallest causal
-   optimization. The Kata shell restriction remains in force; no measurement
-   warrants bypassing confidentiality or readiness controls.
+Both optimizations are now promoted and deployment-tested on DEV, including
+normal deletion and exact storage/canary verification. The remaining question
+is actual user-visible latency, not promotion or cleanup.
+
+1. Investigate why external HTTPS first succeeds around 301 seconds in both G
+   and H despite earlier pod/API readiness in H. Use permitted TLS, gateway and
+   certificate metadata, never customer logs or raw private material; do not
+   assume a root cause from the repeated interval.
+2. Separate the initialization 423 gate, repeated ownership delay and five-second
+   worker scheduling floor using permitted metadata, then select the smallest
+   causal optimization. The Kata shell restriction remains in force; no
+   measurement warrants bypassing confidentiality or readiness controls.
 
 DEV normal-auth preflight and encrypted backup/isolated four-database restore
 passed before this checkpoint. The backup is per-database logical snapshots,
@@ -177,13 +226,17 @@ the fallback.
 A read-only check of the preserved DEV canary confirmed app and ingress readiness
 initial delays of 180 seconds and an init CPU limit of 250m. The canary UID remains
 `90f0d6c1-fab7-44ef-9cec-942ea1058efd`, all four containers ready, zero restarts.
-These settings matched the CAP defaults observed before PR99. Earlier identical
-readiness predicates are a candidate in the separate CAP work, but no 180-second user-latency saving is established:
-measure first external HTTPS/SSH separately from declared rollout readiness.
+These settings matched the CAP defaults observed before PR99 and are historical
+settings of the preserved canary, not H's new pod. PR99 now uses earlier identical
+readiness predicates for new deployments. H demonstrates earlier declared
+readiness but no material external HTTPS improvement; no 180-second user-latency
+saving is established.
 
 Next fresh-app candidates: measure init phase/throttling before raising its bounded
-CPU allowance; split G's 45-second scheduled-to-ready-to-start interval into volume attachment, runtime boot
-and image pull/unpack; prefetch only verified immutable public artifacts into the
-actual runtime cache if pulls are material. Never reuse tenant keys, decrypted
-volumes, private-image plaintext or attested sessions. CAP PR99 is source-merged,
-not deployed; the running DEV CAP settings have not been changed by that PR.
+CPU allowance; split G's 45-second scheduled-to-ready-to-start interval into
+volume attachment, runtime boot and image pull/unpack. Do not increase CPU or add
+caches before measuring their contribution. Any future artifact prefetch must
+be justified by measured pull cost and limited to verified immutable public
+artifacts in the actual runtime cache. Never reuse tenant keys, decrypted
+volumes, private-image plaintext or attested sessions. CAP PR99 is now deployed
+and tested on DEV only.
