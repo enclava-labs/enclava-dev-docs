@@ -78,3 +78,28 @@ passed before this checkpoint. The backup is per-database logical snapshots,
 not a coordinated full recovery point. No preprod environment access or changes.
 This change-scoped verification is not an absolute confidentiality guarantee or
 a declaration of full production readiness.
+
+## Follow-up: simpler monitoring and fresh-app priorities
+
+[PaaS PR91](https://github.com/enclava-labs/enclava-paas/pull/91), head
+`92662a0`, implements startup-plus-30-second completion-relative monitoring in
+the existing loop. No background task/table/session/cache was added. Skipped
+checks preserve JSON and time; fresh observations use the existing PostgreSQL
+heartbeat-start timestamp. Transaction checks, locks and two-minute freshness
+predicates remain unchanged. Source is committed/pushed. Final-head CI/review and
+DEV measurement remain pending; local DB, consumer, clippy and formatting checks
+pass, with exact coverage recorded in the PR. PR90 release build34021138045 has
+since completed successfully, but no new image was promoted during this follow-up.
+
+A read-only check of the preserved DEV canary confirmed app and ingress readiness
+initial delays of180 seconds and an init CPU limit of250m. The canary UID remains
+`90f0d6c1-fab7-44ef-9cec-942ea1058efd`, all four containers ready, zero restarts.
+These settings match CAP source defaults. Earlier identical readiness predicates
+are a concrete next candidate, but no180-second user-latency saving is established:
+measure first external HTTPS/SSH separately from declared rollout readiness.
+
+Next fresh-app candidates: measure init phase/throttling before raising its bounded
+CPU allowance; split47-second sandbox startup into volume attachment, runtime boot
+and image pull/unpack; prefetch only verified immutable public artifacts into the
+actual runtime cache if pulls are material. Never reuse tenant keys, decrypted
+volumes, private-image plaintext or attested sessions. No CAP setting was changed.
