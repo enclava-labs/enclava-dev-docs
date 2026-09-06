@@ -264,3 +264,24 @@ Confidentiality regression checks and real attested deployments passed; that is
 not a proof of absolute security or production readiness. No crypto reduction,
 plaintext logging, attestation bypass, readiness bypass or preprod change was
 introduced. The unsafe CPU-only experiment was explicitly rejected.
+The pre-existing fixture-derived platform release trust root is unchanged by
+these performance fixes; production root custody/rotation remains a separate
+security prerequisite. Passing this DEV test does not close that gap.
+
+## Next controlled measurement
+
+The companion collector is [PaaS #94](https://github.com/enclava-labs/enclava-paas/pull/94).
+Independent review caught acceptance of non-u64 broker durations; the collector
+now rejects fractional/exponent/out-of-range values while preserving existing
+CLI/worker float compatibility. The producer uses an explicitly parentless
+tracing event to avoid inheriting request-span fields.
+
+After producer review and CI, use a signed CAP release and DEV-only promotion;
+append only `cap::workload_tls_timing=debug` to existing API logging directives.
+Repeat a fresh normal-auth deployment with bounded observers, collect API logs
+through the strict filter without retaining raw logs, and group the new events
+by pod/process and request sequence. Compare nested DNS visibility, external
+lookup, ACME validation and certificate retrieval durations separately—never
+add them to their enclosing broker total. Preserve runtime/crypto settings and
+all readiness checks. Verify HTTPS/SSH and normal cleanup again before claiming
+the instrumentation or any subsequent behavioral fix is live-validated.
