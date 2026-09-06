@@ -64,6 +64,18 @@ managed-config wait was 84.254 seconds; initialization readiness and worker
 scheduling remain distinct bottlenecks. The roughly 18-second ownership phase
 also repeated, versus F's 0.945 seconds. Do not sum these nested measurements.
 
+The HTTPS observer did not wait five minutes to start: G/H began at 161/141 ms,
+each made 132 attempts before 300 seconds, and each observed 200 on sample 133.
+Maximum sample gaps were 12.027/12.061 seconds because API polling shares the
+observation loop; these are sampled availability bounds, not continuous probes.
+
+The next narrow test should run normal HTTPS alongside HTTPS pinned to the
+verified DEV edge IP (`curl --resolve`), keeping the same hostname, SNI and
+certificate verification. Record only timing, status and TLS outcome. This
+separates resolver behavior from TLS/routing convergence without bypassing TLS.
+CAP's public DNS records use a 300-second positive TTL, but that alone cannot
+explain fresh-name negative caching or prove the cause of these handshake failures.
+
 H's normal destroy exited zero. At 12:23 UTC the exact disposable namespace,
 PVs `ff3e1c0b-be74-4592-b374-cf19cb1e4b30` and
 `f3127bf1-1c60-49f1-af33-1f8bf9ec5610`, and corresponding Longhorn volumes
