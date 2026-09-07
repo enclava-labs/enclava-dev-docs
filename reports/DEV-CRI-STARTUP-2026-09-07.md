@@ -116,3 +116,35 @@ reused with changed templates. Engine drift checks are advisory, not automatic
 StatefulSet reapplication. Preserve the original canary, which remains the same
 UID with four ready containers and zero restarts. PR review/CI and coordinated
 DEV rollout/live before-after validation remain pending; no PREPROD changes.
+
+### Historical-policy compatibility: review finding and fix
+
+CAP review comment3947382081 identified a real defect in the initial candidate:
+retries, reclaimed `watching` jobs and rollback reuse stored signed policy text
+while rendering with current engine code. An unconditional Memory switch would
+break those historical policies even with both new services deployed.
+
+The revised signer emits the exact first line
+`# enclava-cap-volume-layout: guest-memory-v1` plus LF **before** hashing and
+signing policy bytes. CAP selects Memory only from that exact prefix in the
+verified stored generated policy. Historical/unmarked/missing policy, unsupported
+markers, leading whitespace/BOM, CRLF and embedded lookalikes keep the old disk
+layout. The CAP fallback and legacy path remain unchanged. No new request field,
+host annotation or relaxed policy grants this selection.
+
+The customer descriptor binds the expected policy hash; artifact signatures bind
+that same hash. CAP validates stored authority before reconstructing retry or
+rollback and hash-checks exact policy text before generating volumes. New tests
+cover full-StatefulSet replay with old/new/no policy, marker tampering, strict
+prefix matching and legacy behavior. CAP engine300 passed,14 existing ignored;
+volume tests19 passed. Signer60 library+7 binary tests passed, including marker
+emission and rejection after marker insertion even if unsigned hashes are
+recomputed. Formatting, clippy and diff checks passed.
+
+**Revised promotion order:** CAP compatibility reader first, signer emitter
+second. This replaces the initial simultaneous-promotion assumption. Once new
+marked artifacts exist, do not downgrade CAP below the compatible reader:
+historical *application* rollback works, but an old *CAP binary* cannot render
+the new layout. Signer-only rollback can stop new issuance while retaining the
+compatible CAP reader. Both PRs remain unmerged pending final review and CI;
+fresh DEV/persistence measurements are still required.
