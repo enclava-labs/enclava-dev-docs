@@ -87,3 +87,32 @@ potential savings**, not a measured result or a guaranteed end-to-end gain.
 
 Actual Devin SWE-1.7 source tracing and Pi GLM-5.3 bounded reasoning review
 were used; neither is a substitute for the planned live comparison.
+
+## Implementation and coordinated policy change
+
+[CAP #106](https://github.com/enclava-labs/cap/pull/106) implements the three
+nonlegacy Memory volumes; [policy-templates #4](https://github.com/enclava-labs/policy-templates/pull/4)
+mirrors them in the independent policy-generation manifest. Changing CAP alone
+would mismatch strict generated storage policy. No policy normalization or
+authorization relaxation is included. Both test suites now assert init-last.
+
+Local CAP engine suite:296 passed,14 existing ignored; volume suite15 passed.
+Restoring the old declarations makes exactly the two new Memory tests fail;
+restoring the candidate returns green. Engine all-target clippy, formatting and
+diff checks pass. Signing-service suite:59 library+7 binary tests passed;
+all-target clippy and formatting pass. Actual Pi GLM-5.3 independent review
+completed and found no proven changed-line defect; another attempt timed out
+and is not approval. The reviewer correctly required the companion signer
+change, init-last assertions, real generated-policy acceptance and storage
+persistence/managed-config/TLS handoff checks.
+
+The current digest-pinned init image's helper is12,463,272 bytes, measured in a
+local read-only, network-disabled container with no tenant state. It fits the
+declared16Mi helper volume. This is not evidence of guest limit enforcement.
+
+Do not assume signer-first rollout alone handles existing signed workloads.
+Both components must be active before the fresh test; old policies must not be
+reused with changed templates. Engine drift checks are advisory, not automatic
+StatefulSet reapplication. Preserve the original canary, which remains the same
+UID with four ready containers and zero restarts. PR review/CI and coordinated
+DEV rollout/live before-after validation remain pending; no PREPROD changes.
