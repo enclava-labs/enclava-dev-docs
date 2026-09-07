@@ -7,6 +7,10 @@ inside container starts**, concentrated in tools, app and init. This is the
 larger optimization target, ahead of the few seconds of avoidable DNS fallback.
 No runtime speedup is claimed yet.
 
+The source changes are merged and signed release builds succeeded. The
+optimization is **not yet enabled**: the compatible CAP reader is live on DEV,
+but signer promotion and the fresh U comparison/persistence checks remain pending.
+
 | CRI operation, seconds | P | R | Q | S |
 | --- | ---: | ---: | ---: | ---: |
 | RunPodSandbox | 11.028 | 10.889 | 10.963 | 11.199 |
@@ -23,6 +27,25 @@ S RunPodSandbox completed at05:07:57.879, while the condition changed at05:08:17
 after tools startup. S scheduled at05:07:31 and RunPodSandbox began at05:07:46.680,
 leaving about15.7s before that runtime call, including volume preparation.
 Do not add condition intervals to their nested CRI operations.
+
+### Baseline T, before optimization promotion
+
+| CLI measurement | Seconds |
+| --- | ---: |
+| Observed total | 162.167546 |
+| Emitted total | 161.020818 |
+| Bootstrap wait | 79.987682 |
+| Deploy request | 18.678269 |
+| Ownership | 0.917058 |
+| Managed-config wait | 49.437461 |
+
+T's CRI durations were sandbox10.784s, tools20.380s, web9.387s,
+proxy0.249s, ingress0.181s and init9.923s, reproducing the earlier startup
+pattern. These nested measurements must not be added to CLI total time.
+Normal-auth SSH passed both first-use TOFU and a repeat with strict saved-host-key
+verification. T is retained healthy with pod UID
+`94defae1-7c2d-4395-8fe9-303396bd1742`. This is an unoptimized baseline, not a
+speedup measurement.
 
 ## Evidence and scope
 
@@ -110,12 +133,12 @@ The current digest-pinned init image's helper is12,463,272 bytes, measured in a
 local read-only, network-disabled container with no tenant state. It fits the
 declared16Mi helper volume. This is not evidence of guest limit enforcement.
 
-Do not assume signer-first rollout alone handles existing signed workloads.
-Both components must be active before the fresh test; old policies must not be
-reused with changed templates. Engine drift checks are advisory, not automatic
+Do not use signer-first rollout: the historical-policy compatibility fix below
+requires the CAP reader first. Both components must be active before the fresh
+optimized test. Engine drift checks are advisory, not automatic
 StatefulSet reapplication. Preserve the original canary, which remains the same
-UID with four ready containers and zero restarts. PR review/CI and coordinated
-DEV rollout/live before-after validation remain pending; no PREPROD changes.
+UID with four ready containers and zero restarts. Coordinated DEV rollout and
+live before-after validation remain pending; no PREPROD changes.
 
 ### Historical-policy compatibility: review finding and fix
 
@@ -146,5 +169,25 @@ second. This replaces the initial simultaneous-promotion assumption. Once new
 marked artifacts exist, do not downgrade CAP below the compatible reader:
 historical *application* rollback works, but an old *CAP binary* cannot render
 the new layout. Signer-only rollback can stop new issuance while retaining the
-compatible CAP reader. Both PRs remain unmerged pending final review and CI;
-fresh DEV/persistence measurements are still required.
+compatible CAP reader. Both source PRs are now merged; fresh DEV/persistence
+measurements are still required.
+
+### Merged sources and release-build status
+
+- CAP #106 merged at `230673207c0061834e654b238c226c4a4969ca9d`.
+  [Signed release build 34096102055](https://github.com/enclava-labs/cap/actions/runs/34096102055)
+  and [release CI 34096104261](https://github.com/enclava-labs/cap/actions/runs/34096104261)
+  succeeded.
+- Policy-templates #4 merged at `c7616753254e71812364bb49538a9ac37930ab63`.
+  Signed tag `v0.1.0-dev-bootstrap-memory` has a successful
+  [release build 34095716072](https://github.com/enclava-labs/policy-templates/actions/runs/34095716072).
+
+[Ops #157](https://github.com/enclava-labs/enclava-ops-manifests/pull/157) merged
+at `f85a5a9eaef696ef834f8ef2d148249787eaa0c9`. DEV CAP reader imageID matches
+`sha256:7dffd3b0273e5d9af26b93c83c8ef2c35d5bc680dc931a892c9a9f056b078e58`;
+the migration46 Job succeeded and Deployment is ready. Original canary and T
+retain their exact pod UIDs, four ready containers and zero restarts. T verified
+HTTPS200 and strict saved-host-key authenticated SSH pass after promotion.
+PaaS readyz reports ten checks. Signer-only
+[ops #158](https://github.com/enclava-labs/enclava-ops-manifests/pull/158) awaits
+review/CI; fresh U and persistence verification remain pending. No speedup is claimed.
