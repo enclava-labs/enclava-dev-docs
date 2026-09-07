@@ -68,5 +68,39 @@ the complete whitespace-delimited token and adds a regression. Both comments
 were answered; Devin marked the finding resolved. No raw data is exported.
 
 Actual Pi GLM-5.3 attempts produced no review result within bounded waiting and
-were stopped/timed out. They are not counted as approval. Exact-head CI and
-live DEV results remain pending.
+were stopped/timed out. They are not counted as approval. Exact-head CI passed:
+CAP workspace `34083407420` and image `34083407416`, PaaS `34083471142`.
+All reviews/inline/issue comments were reread before separate exact-head merge
+calls. CAP merged as `adc672408791376487c26a358916dac92c830e3d`, PaaS as
+`8c90947125c2a37db937c2f6472966401c1fb230`.
+
+Signed API release dispatch `34083992338`, tag
+`manual-20260907-dev-dns-error-timing`, targets that exact CAP main source.
+Release completion, DEV promotion and live results remain pending.
+
+## Read-only resolver topology check
+
+DEV live CoreDNS and its checked-in `clusters/enclava-work/coredns.yaml` both
+use `cache 30`, forwarding through node DNS endpoints on port1053. Those
+endpoints also use `cache 30`, matching `node-dns-upstream.yaml`. No DNS config
+was changed. [CoreDNS cache documentation](https://coredns.io/plugins/cache/)
+defines this as a TTL cap, not a mandatory delay; denial responses can be cached.
+The two caps must not be added into a claimed60s delay. Actual negative answers,
+cache residence and upstream publication timing remain unproven for Q.
+
+## Offline bootstrap comparison while the release builds
+
+P/R/Q sanitized metadata consistently brackets46/46/47s from scheduling to
+sandbox-ready, then23/24/23s until `enclava-init` starts. Volume attach events
+occur at scheduling+10s, last mount events at+14–15s, first Pulled event at+26s.
+The remaining gap is not yet attributable to VM boot versus image/container
+preparation: these events omit component association and operation start times.
+CLI bootstrap retry sleeps overlap infrastructure startup, so they are not
+additive delay or evidence that deleting sleeps saves a minute.
+
+DEV kubelet exposes numeric cumulative duration/count metrics for
+`run_podsandbox`, `pull_image`, `create_container`, and `start_container`.
+Only those fixed labels and numeric values were projected from the metadata
+endpoint; no raw stream was retained. Before/after snapshots around S can
+provide aggregate operation duration deltas. They are node-wide, not per-pod;
+concurrent operations, failed attempts and counter resets must be considered.
