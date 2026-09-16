@@ -88,7 +88,8 @@ copy of the password. Practical rules:
    `recovery_requires_locked_init_verifier`; restart the workload (platform-side pod
    restart / redeploy) and retry. Recover leaves storage unlocked; a follow-up
    `enclava unlock` reporting "not locked" is expected, not a bug.
-3. **Rotation**: `enclava change-password --app NAME` (old → new password).
+3. **Rotation**: `enclava change-password --app NAME` (old → new password; both can
+   come from files via `--current-password-file`/`--new-password-file` for scripted runs).
    `enclava key restore <backup>` re-derives local key material from a backup (e.g.
    new laptop) — after which `deploy`/`claim` work again.
 4. **Stale escrow** (destroy-while-dead): the escrow survives, and a same-named new

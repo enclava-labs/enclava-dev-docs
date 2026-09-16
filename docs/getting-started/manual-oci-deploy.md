@@ -21,7 +21,7 @@ From the repository root:
 enclava init
 ```
 
-`init` prompts for an app name and port, then writes both `enclava.toml` and `.github/workflows/enclava-deploy.yml` (a build-and-sign workflow). When a `Dockerfile` is present it suggests the first `EXPOSE` port; without one it suggests port 3000. `enclava prepare` writes the same files without prompts on a first run; when either file already exists it prompts before overwriting (and a non-TTY run fails with "not a terminal" — there is no `--yes`/`--force`). For CI: run `prepare` once, commit both files, and don't re-run it over them.
+`init` prompts for an app name and port (pass `--app-name`/`--port` to run it non-interactively; a piped-stdin run takes the directory name and the `Dockerfile` `EXPOSE` port, or 3000, as defaults), then writes both `enclava.toml` and `.github/workflows/enclava-deploy.yml` (a build-and-sign workflow). Names are validated before anything is written — lowercase `[a-z0-9-]`, must start with a letter, no consecutive hyphens, at most 63 characters, no reserved system names — so a scaffold `create` would reject never lands. `enclava prepare` writes the same files without prompts on a first run; when either file already exists it prompts before overwriting — pass `--yes` to skip that confirmation in CI (a non-TTY run without `--yes` still fails with "not a terminal"). For CI: run `prepare` once, commit both files, and don't re-run it over them.
 
 The generated config:
 
