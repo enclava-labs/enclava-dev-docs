@@ -100,7 +100,8 @@ copy of the password. Practical rules:
    `enclava auto-unlock enable --image <img>@sha256:<digest>` wraps the seed for
    KBS-attestation-gated release; `disable` returns to password-on-restart. Both need
    the digest-pinned image and local `enclava.toml` to build a signed redeploy
-   descriptor. Hosted template apps cannot switch modes with the current CLI.
+   descriptor, and take the unlock password via prompt or `--password-file`.
+   Hosted template apps cannot switch modes with the current CLI.
 
 If both password and mnemonic are gone, the encrypted volume is unrecoverable by
 design — the platform cannot help; say so plainly rather than suggesting tricks.

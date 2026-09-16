@@ -27,7 +27,8 @@ Auto-unlock stores a separate encrypted seed envelope and fetches it through the
 
 ## Recovery and stale escrow
 
-The recovery mnemonic (BIP39, shown once at claim) is an independent representation
+The recovery mnemonic (BIP39, persisted to the protected local keystore at claim —
+never printed) is an independent representation
 of the owner seed — it is not a copy of the password.
 `enclava recover --app <app> --mnemonic-file <file> --new-password-file <file>`
 reconstructs that seed and wraps it under a new password. Two operational rules:

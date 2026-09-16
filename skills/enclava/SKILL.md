@@ -57,10 +57,13 @@ against observed behavior or the current implementation.
 Password mode (the default):
 
 - **First deploy** waits for the TEE bootstrap endpoint, then the owner **claims**
-  ownership: set a password, receive the BIP39 mnemonic (shown once). With
-  `deploy --storage-password-file PATH` this happens automatically and non-interactively.
+  ownership: sets a password; the BIP39 mnemonic is persisted to the protected
+  local keystore (never printed). With `deploy --storage-password-file PATH` this
+  happens automatically — no prompt, but the session must still be attended
+  (terminal stdin); fully unattended claims are refused until response-loss
+  recovery exists.
 - **Every restart** boots to `locked`; unlock it with the password
-  (`enclava unlock [--app NAME]`, interactive). On the manual OCI path, a complete
+  (`enclava unlock [--app NAME]`, prompted or `--password-file`). On the manual OCI path, a complete
   redeploy command can instead supply the same `--storage-password-file`.
 - **`enclava recover --mnemonic-file M --new-password-file P`** re-wraps the seed under
   a new password after a lost password. It requires a **freshly booted, locked TEE** —
@@ -92,7 +95,7 @@ still matches the surviving envelope.
 | Area | Commands |
 | --- | --- |
 | Auth | Hosted/device flow: `login [--api-url] [--no-browser] [--org] [--approve-logs]`, `whoami`, `logout`. Standalone CAP only: `signup`, `login --nostr`, `login --email`. |
-| Scaffold | `init` (interactive; detects a Dockerfile when present, otherwise defaults the port to 3000), `prepare` (non-interactive *first* run only — on existing output files it prompts, which dies non-TTY; no `--yes` yet) |
+| Scaffold | `init [--app-name NAME] [--port PORT]` (prompts when interactive; validates the name — leading letter, `[a-z0-9-]`, no consecutive hyphens, ≤63 — before writing anything), `prepare [--yes]` (`--yes` skips the update-existing-files confirmation; without it a non-TTY run fails "not a terminal") |
 | Deploy | `create [--image] [--signer-subject] [--signer-issuer]`, `deploy --image IMG@DIGEST [--set K=V] [--set-file K=PATH] [--storage-password-file PATH]` |
 | Observe | `status [--app]`, `logs [--app] [-f] [--log-private-key-file PATH]`, `log-key generate/list/select/revoke` |
 | Config | `config set K=V…` (local `enclava.toml`; no `--app`), `config get` (names only), `config unset K` |
