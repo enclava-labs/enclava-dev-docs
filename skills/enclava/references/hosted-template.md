@@ -30,7 +30,7 @@ Useful flags:
 | --- | --- |
 | `--ssh-public-key KEY` | Key as an argument; repeatable. |
 | `--no-wait` / `--ssh-timeout-seconds N` | Don't block on endpoint readiness (default waits up to 600s). |
-| `--storage-password-file PATH` | Password-mode storage, non-interactive claim/unlock (same semantics as the OCI path). |
+| `--storage-password-file PATH` | Password-mode storage, no-prompt claim/unlock (same semantics as the OCI path). |
 | `--log-key KEY_ID` / `--generate-log-key KEY_ID` | Bind org log-encryption to this deploy (see day-2 for the logs ceremony). |
 
 ## 3. Get the SSH command

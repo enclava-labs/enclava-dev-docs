@@ -13,12 +13,12 @@ workload, that path (`hosted-template.md`) is much less work.
 ## 1. Scaffold
 
 ```bash
-enclava init        # interactive: detects Dockerfile + EXPOSE when present (otherwise
-                    # suggests port 3000); writes enclava.toml and the build/sign CI
-enclava prepare     # same scaffolding without prompts — first run only. When either
-                    # output file already exists it prompts to update (dialoguer),
-                    # and a non-TTY run exits "not a terminal". There is no
-                    # --yes/--force yet — in CI, run it once, commit both files,
+enclava init        # prompts for name/port when interactive; --app-name/--port run it
+                    # non-interactively (piped stdin takes the directory name and
+                    # EXPOSE/3000). Validates the app name before writing anything.
+enclava prepare     # same scaffolding; --yes skips the update-existing-files
+                    # confirmation (a non-TTY run without --yes still exits
+                    # "not a terminal"). In CI: run it once, commit both files,
                     # and don't re-run over them.
 ```
 
@@ -190,12 +190,14 @@ enclava deploy \
 ```
 
 - `--storage-password-file` makes the first deploy **claim ownership and unlock
-  non-interactively** (create the file with tight permissions; never pass the password
-  inline). Without it, `deploy` prompts for the password, or the user runs
+  without a password prompt** (create the file with tight permissions; never pass the password
+  inline) — the session must still be attended: fully unattended (no terminal stdin)
+  claims are refused until response-loss recovery exists. Without the flag,
+  `deploy` prompts for the password, or the user runs
   `enclava claim` separately.
-- By default the recovery mnemonic is persisted locally so `enclava key backup` covers
-  it; `--no-store-mnemonic` opts out (shown-once-only — only for users who truly want
-  no local copy).
+- The recovery mnemonic is persisted to the protected local keystore so `enclava key backup`
+  covers it; the mnemonic is never printed, so `--no-store-mnemonic` is rejected before
+  the claim (an unpersisted mnemonic would be permanently lost).
 - Runtime config: `--set KEY=VALUE`, or `--set-file KEY=PATH` to keep a secret out of
   process arguments.
 

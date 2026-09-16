@@ -88,7 +88,8 @@ copy of the password. Practical rules:
    `recovery_requires_locked_init_verifier`; restart the workload (platform-side pod
    restart / redeploy) and retry. Recover leaves storage unlocked; a follow-up
    `enclava unlock` reporting "not locked" is expected, not a bug.
-3. **Rotation**: `enclava change-password --app NAME` (old → new password).
+3. **Rotation**: `enclava change-password --app NAME` (old → new password; both can
+   come from files via `--current-password-file`/`--new-password-file` for scripted runs).
    `enclava key restore <backup>` re-derives local key material from a backup (e.g.
    new laptop) — after which `deploy`/`claim` work again.
 4. **Stale escrow** (destroy-while-dead): the escrow survives, and a same-named new
@@ -99,7 +100,8 @@ copy of the password. Practical rules:
    `enclava auto-unlock enable --image <img>@sha256:<digest>` wraps the seed for
    KBS-attestation-gated release; `disable` returns to password-on-restart. Both need
    the digest-pinned image and local `enclava.toml` to build a signed redeploy
-   descriptor. Hosted template apps cannot switch modes with the current CLI.
+   descriptor, and take the unlock password via prompt or `--password-file`.
+   Hosted template apps cannot switch modes with the current CLI.
 
 If both password and mnemonic are gone, the encrypted volume is unrecoverable by
 design — the platform cannot help; say so plainly rather than suggesting tricks.

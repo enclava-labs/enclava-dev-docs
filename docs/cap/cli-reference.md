@@ -19,8 +19,8 @@ enclava logout
 ## App lifecycle
 
 ```bash
-enclava init                                       # generate enclava.toml (interactive)
-enclava prepare                                    # write enclava.toml + CI signing workflow
+enclava init [--app-name NAME] [--port PORT]  # generate enclava.toml (prompts when interactive)
+enclava prepare [--yes]                       # write enclava.toml + CI signing workflow
 enclava create [--image IMAGE] --signer-subject SUBJECT [--signer-issuer URL]
 enclava deploy --image IMAGE@DIGEST [--set KEY=VALUE] [--set-file KEY=PATH] [--storage-password-file PATH]
 enclava status [--app APP]
@@ -56,18 +56,18 @@ enclava template ssh-command --name shell --wait [--json]
 ## Ownership and recovery
 
 ```bash
-enclava claim [--app APP]
-enclava unlock [--app APP]
+enclava claim [--app APP] [--password-file PATH]
+enclava unlock [--app APP] [--password-file PATH]
 enclava recover [--app APP] [--mnemonic-file PATH] [--new-password-file PATH]
-enclava change-password [--app APP]
-enclava auto-unlock enable --image IMAGE@DIGEST   # manual OCI app; local enclava.toml
-enclava auto-unlock disable --image IMAGE@DIGEST  # manual OCI app; local enclava.toml
+enclava change-password [--app APP] [--current-password-file PATH] [--new-password-file PATH]
+enclava auto-unlock enable --image IMAGE@DIGEST [--password-file PATH]   # manual OCI app; local enclava.toml
+enclava auto-unlock disable --image IMAGE@DIGEST [--password-file PATH]  # manual OCI app; local enclava.toml
 enclava key status
-enclava key backup --out "$HOME/.enclava/my-app-recovery.json"
-enclava key restore <backup-file> [--force]
+enclava key backup --out "$HOME/.enclava/my-app-recovery.json" [--new-passphrase-file PATH]
+enclava key restore <backup-file> [--force] [--passphrase-file PATH]
 ```
 
-Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`; the standalone commands cover the interactive path. Back up recovery material right after the first deploy.
+Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`; the standalone commands cover the interactive path and the `--*-file` flags for recorded-output runs (`2>&1 | tee` redirects stderr, where password prompts render — pass the matching file flag to avoid the prompt). Back up recovery material right after the first deploy.
 
 ## Organizations and signer identity
 
