@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Production Checklist
 
-This checklist is for operators deploying CAP or the hosted PaaS backing services.
+This checklist is for operators running a self-hosted CAP deployment.
 
 ## CAP API
 
@@ -24,10 +24,3 @@ This checklist is for operators deploying CAP or the hosted PaaS backing service
 - Add network policies for PostgreSQL, Trustee/KBS, policy signing, registry metadata, DNS, and tenant TEE callbacks.
 - Decide whether CAP-managed DNS and KBS policy management are required.
 - Replace placeholder Kubernetes secrets with your secret-management system.
-
-## Hosted PaaS
-
-- Keep CAP credentials, ZITADEL client secrets, billing keys, relay config, and payment processor secrets server-side.
-- Serve browser workflows through the PaaS backend-for-frontend.
-- Configure ZITADEL OIDC, billing, Bitcoin payment reconciliation, and CAP bridge routes for the target environment.
-- For SSH templates, configure FRP relay values and a signed digest-pinned `DEBIAN_SSH_FRP_IMAGE`.

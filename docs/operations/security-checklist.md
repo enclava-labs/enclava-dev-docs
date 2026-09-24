@@ -20,13 +20,6 @@ sidebar_position: 2
 - Scope registry pull credentials with repository allowlists where possible.
 - Keep generated policy artifacts and descriptor verification enabled.
 
-## PaaS boundary
-
-- Do not expose CAP, Lago, ZITADEL admin, relay, or payment processor credentials to browser clients.
-- Keep hosted routes explicit when unsupported; avoid accidental fallthrough to CAP behavior.
-- Validate external URLs returned by CAP or workloads before fetching them from PaaS.
-- Treat stable SSH command rendering as a security boundary; reject non-canonical output.
-
 ## Recovery material
 
 - Create recovery backups for password-mode apps.

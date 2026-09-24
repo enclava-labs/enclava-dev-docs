@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Deploy a Hosted Template
 
-Hosted templates are curated workload definitions exposed by Enclava PaaS. They are useful when Enclava can manage the runtime shape, sidecars, stable endpoint allocation, and config metadata for you.
+Hosted templates are workload definitions maintained by Enclava PaaS. Use one when Enclava can manage the runtime shape, sidecars, stable endpoint allocation, and config metadata for you.
 
 ## Debian SSH over FRP
 

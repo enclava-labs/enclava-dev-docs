@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # CAP CLI Reference
 
-The `enclava` CLI drives CAP and the hosted PaaS flows. Use `enclava <command> --help` to discover current flags; for executable or security-sensitive behavior, observed behavior and the current implementation are authoritative.
+The `enclava` CLI drives CAP and the hosted PaaS flows. Run `enclava <command> --help` for the current flags.
 
 ## Account and context
 
@@ -67,7 +67,7 @@ enclava key backup --out "$HOME/.enclava/my-app-recovery.json" [--new-passphrase
 enclava key restore <backup-file> [--force] [--passphrase-file PATH]
 ```
 
-Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`; the standalone commands cover the interactive path and the `--*-file` flags for recorded-output runs (`2>&1 | tee` redirects stderr, where password prompts render — pass the matching file flag to avoid the prompt). Back up recovery material right after the first deploy.
+Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags in scripts. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy.
 
 ## Organizations and signer identity
 

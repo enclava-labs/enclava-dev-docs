@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Runtime Verification
 
-Runtime verification is the CAP path that prevents a Kubernetes rollout from becoming a secret-release event by itself.
+A successful Kubernetes rollout is not enough to release secrets. Seeds, mounted state, and TLS material become available only after `enclava-init` passes the checks below.
 
 ## Verification chain
 
@@ -27,25 +27,24 @@ Auto-unlock stores a separate encrypted seed envelope and fetches it through the
 
 ## Recovery and stale escrow
 
-The recovery mnemonic (BIP39, persisted to the protected local keystore at claim —
-never printed) is an independent representation
-of the owner seed — it is not a copy of the password.
+The recovery mnemonic is a BIP39 encoding of the owner seed, not a copy of the password.
+It is saved to the protected local keystore at claim time and never printed.
 `enclava recover --app <app> --mnemonic-file <file> --new-password-file <file>`
-reconstructs that seed and wraps it under a new password. Two operational rules:
+reconstructs the seed and wraps it under a new password. Two rules apply:
 
-- **Recovery requires a freshly-booted *locked* TEE.** Against a long-running pod it
-  returns `recovery_requires_locked_init_verifier` — restart the pod (delete it; the
-  StatefulSet recreates it) and retry.
-- **`destroy` only clears the KBS escrow if the pod is alive.** The in-guest proxy
+- **Recovery requires a freshly booted, locked TEE.** Against a long-running pod it
+  returns `recovery_requires_locked_init_verifier`. Delete the pod so the StatefulSet
+  recreates it, then retry.
+- **`destroy` clears the KBS escrow only if the pod is alive.** The in-guest proxy
   deletes the escrow on teardown, best-effort. If the app was already dead when you
-  destroyed it, the escrow survives — and a newly created app with the same name
-  **inherits it**: claim returns `already_claimed`, and every unlock lands as a silent
-  wrong-password (`state=locked`, `error=null`). The failure signature is a
-  `seed-encrypted` KBS fetch seconds after pod start, before any claim. Fix: recover
-  with the *old* app's mnemonic, which still matches the surviving envelope.
+  destroyed it, the escrow survives, and a new app with the same name inherits it.
+  Claim then returns `already_claimed`, and every unlock fails as a silent wrong
+  password (`state=locked`, `error=null`). You can spot this case by a `seed-encrypted`
+  KBS fetch a few seconds after pod start, before any claim. To fix it, recover with
+  the old app's mnemonic, which still matches the surviving envelope.
 
-Data volumes (PVCs) are deleted by destroy regardless of pod health — only the key
-material survives, so a recreated app starts with empty storage unlocked by old keys.
+`destroy` deletes data volumes (PVCs) whether or not the pod is healthy. Only the key
+material can survive, so a recreated app starts with empty storage unlocked by the old keys.
 
 ## Readiness handoff
 
@@ -58,4 +57,4 @@ The generated runtime uses:
 | `/run/enclava-unlock/unlock.sock` | Password unlock handoff. |
 | `/run/enclava/init-ready` | Readiness signal consumed by `enclava-wait-exec`. |
 
-App and ingress processes should not start before `/run/enclava/init-ready` exists.
+`enclava-wait-exec` keeps app and ingress processes from starting until `/run/enclava/init-ready` exists.

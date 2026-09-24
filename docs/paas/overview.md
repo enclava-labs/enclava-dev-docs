@@ -15,14 +15,11 @@ Enclava PaaS is the hosted product layer for confidential application deployment
 - Hosted API key create and revoke flows.
 - Hosted templates, including `debian-ssh-frp`.
 - Billing, plan limits, invoices, and Bitcoin payment state.
-- CAP bridge routes and parity routes for hosted app/deploy operations.
-- Support/admin workflows and production hardening checks.
+- Support and admin workflows.
 
 ## What PaaS does not own
 
 PaaS does not replace CAP's core runtime. CAP remains the source of truth for API contracts, CLI flows, engine rendering, signed deployment descriptors, and in-TEE verification.
-
-Shared contracts should come from the CAP API schema or generated typed clients rather than hand-maintained duplicate models.
 
 ## Hosted architecture
 
@@ -35,4 +32,4 @@ browser
     -> CAP
 ```
 
-The browser should never call CAP, Lago, ZITADEL admin APIs, relay systems, or payment infrastructure directly. PaaS keeps service credentials server-side.
+The browser talks only to the PaaS backend. It never calls CAP, Lago, ZITADEL admin APIs, relay systems, or payment infrastructure directly, and service credentials stay on the server.

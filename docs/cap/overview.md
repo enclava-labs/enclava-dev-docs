@@ -30,7 +30,7 @@ enclava status
 enclava key backup --out "$HOME/.enclava/my-app-recovery.json"
 ```
 
-The image must be digest-pinned. The signer subject should match the identity that signs the image, such as a GitHub Actions keyless cosign subject.
+The image must be digest-pinned. The signer subject must match the identity that signs the image, such as a GitHub Actions keyless cosign subject.
 
 ## Hosted-template flow
 

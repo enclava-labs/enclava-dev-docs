@@ -10,7 +10,7 @@ Confidential computing protects data while it is being processed. Traditional en
 
 A trusted execution environment, or TEE, is an isolated execution context backed by CPU and platform security features. Enclava targets Kata confidential containers with AMD SEV-SNP. In this model, the workload runs in a lightweight VM-backed guest whose memory is encrypted and isolated from the host.
 
-The practical goal is simple: the cluster can schedule and operate the workload, but the host should not be able to read tenant memory or silently change the trusted startup path without detection.
+The cluster can schedule and operate the workload, but the host cannot read tenant memory, and it cannot change the trusted startup path without detection.
 
 ## Remote attestation
 
@@ -33,6 +33,4 @@ CAP does not treat Kubernetes rollout as enough. A successful confidential deplo
 
 ## What confidential computing does not solve
 
-Confidential computing is not a replacement for application security. It does not automatically fix bugs in your app, prevent intentional data disclosure by the app, or remove the need for access control, audit logs, dependency hygiene, and least-privilege networking.
-
-Treat it as a strong isolation and verification layer around a well-engineered application.
+Confidential computing is not a replacement for application security. It does not fix bugs in your app or stop the app from disclosing data on purpose. You still need access control, audit logs, dependency hygiene, and least-privilege networking.

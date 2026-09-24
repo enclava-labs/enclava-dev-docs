@@ -44,8 +44,8 @@ The application runs as an ordinary container from the developer's point of view
 
 If you operate Enclava through a coding agent (Claude Code, Cursor, Codex, pi, …), install the
 [agent skills](https://github.com/enclava-labs/enclava-dev-skills): procedures, contracts, and failure
-triage the agent loads on demand. Clone straight into your agent's skills directory —
-updates are then just `git pull`:
+triage the agent loads on demand. Clone the repo into your agent's skills directory and
+update it with `git pull`:
 
 ```bash
 git clone https://github.com/enclava-labs/enclava-dev-skills ~/.pi/agent/skills/enclava-dev-skills

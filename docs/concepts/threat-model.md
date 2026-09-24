@@ -8,11 +8,13 @@ Enclava is designed for workloads that need stronger protection from infrastruct
 
 ## In scope
 
-- A cloud, cluster, or platform operator should not be able to read workload memory.
-- A compromised host should not be able to obtain app secrets just by observing the pod.
-- Mutable image tags should not allow code substitution at deploy time.
-- Runtime config and storage unlock material should be released only after expected policy and attestation checks pass.
-- Hosted PaaS browser flows should keep CAP credentials, billing provider keys, ZITADEL secrets, relay config, and Bitcoin processor secrets server-side.
+Enclava is built to prevent the following:
+
+- A cloud, cluster, or platform operator reading workload memory.
+- A compromised host obtaining app secrets by observing the pod.
+- Code substitution at deploy time through mutable image tags.
+- Release of runtime config or storage unlock material before policy and attestation checks pass.
+- Exposure of CAP credentials, billing provider keys, ZITADEL secrets, relay config, or Bitcoin processor secrets to the browser in hosted PaaS flows.
 
 ## Out of scope
 
@@ -24,6 +26,6 @@ Enclava is designed for workloads that need stronger protection from infrastruct
 
 ## Design posture
 
-CAP release builds reject debug bypass flags and insecure TEE modes. Platform images and workload images are expected to be digest-pinned. The in-TEE sidecar fails startup before seed release if descriptor, keyring, policy, or attestation checks do not match.
+CAP release builds reject debug bypass flags and insecure TEE modes. Platform and workload images must be pinned by digest. The in-TEE sidecar fails startup before seed release if descriptor, keyring, policy, or attestation checks do not match.
 
 The hosted PaaS adds a product boundary: browser clients use same-origin PaaS APIs. The PaaS server talks to ZITADEL, Lago, CAP, relay systems, and payment infrastructure without exposing those service credentials to the browser.

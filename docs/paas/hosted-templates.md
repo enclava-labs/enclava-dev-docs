@@ -31,12 +31,3 @@ enclava template ssh-command --name shell --wait
 ## Fail-closed endpoint contract
 
 PaaS stores the expected stable endpoint in template metadata. Browser and CLI clients read that stored endpoint and compare it with workload output. If the workload returns a malformed command, a different host, a padded value, or an unexpected username, the route rejects it instead of showing a possibly unsafe command.
-
-## Production requirements
-
-For production, operators must configure:
-
-- A signed, digest-pinned `DEBIAN_SSH_FRP_IMAGE`.
-- FRP relay configuration through `FRP_RELAY_*`.
-- Readiness reporting with `frp_relay_configured=true`.
-- Release checks that validate image references and endpoint consistency.

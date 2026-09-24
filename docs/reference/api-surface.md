@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # API Surface
 
-Enclava exposes a shared hosted CLI API through PaaS and a CAP API underneath it. Exact schemas should be generated from the OpenAPI contract or CAP API types.
+Enclava exposes a shared hosted CLI API through PaaS and a CAP API underneath it.
 
 ## Shared hosted CLI API
 
