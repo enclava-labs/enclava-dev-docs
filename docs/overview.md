@@ -40,6 +40,17 @@ developer
 
 The application runs as an ordinary container from the developer's point of view, but startup is guarded by confidential-computing checks. CAP binds the image digest, signer identity, org keyring, generated policy, and runtime attestation material together before secrets or state become available.
 
+## Agent skills
+
+If you operate Enclava through a coding agent (Claude Code, Cursor, Codex, pi, …), install the
+[agent skills](https://github.com/enclava-labs/enclava-dev-skills): procedures, contracts, and failure
+triage the agent loads on demand. Clone straight into your agent's skills directory —
+updates are then just `git pull`:
+
+```bash
+git clone https://github.com/enclava-labs/enclava-dev-skills ~/.pi/agent/skills/enclava-dev-skills
+```
+
 ## Start here
 
 - [Quickstart](./getting-started/quickstart.md) explains the recommended path.

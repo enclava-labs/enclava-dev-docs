@@ -15,6 +15,7 @@ const groups = pages.reduce((acc, p) => ((acc[section(p)] ??= []).push(p), acc),
 let out = `# Enclava Developer Documentation
 
 > Deploy confidential applications with Enclava PaaS and CAP. Append .md to any page URL for raw markdown.
+> Agent skills (deploy/operate/troubleshoot procedures for coding agents): https://github.com/enclava-labs/enclava-dev-skills
 
 - [Enclava Developer Documentation](/overview.md)
 `;
