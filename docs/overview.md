@@ -5,44 +5,69 @@ slug: /
 
 # Enclava Developer Documentation
 
-Enclava lets you deploy OCI applications as confidential workloads. The hosted PaaS gives teams a console, login, billing, hosted templates, and CLI approval flows. CAP is the open-source control plane underneath: CLI, API, Kubernetes manifest engine, and in-TEE runtime sidecar.
+Enclava runs your containers as confidential applications. Your app runs inside a hardware-isolated trusted execution environment (TEE) on AMD SEV-SNP, so the infrastructure can schedule and observe it but cannot read its memory, its secrets, or its stored data.
 
-Use these docs when you want to run applications where infrastructure operators can schedule and observe the service, but cannot read runtime secrets, mounted state, or customer configuration released inside the trusted execution environment.
+From your side it works like a regular platform: log in, point the `enclava` CLI at a container image, and deploy. Before your app gets its secrets and storage, Enclava checks that the running code is the image you signed.
+
+<Chips>
+
+- Encrypted in use
+- Encrypted at rest
+- Attestation verifiable
+- AMD SEV-SNP
+
+</Chips>
 
 ## What you can deploy
 
-**Hosted templates** are the fastest path. Enclava PaaS currently exposes the `debian-ssh-frp` template for a persistent SSH endpoint backed by a confidential workload. The platform reserves a stable `host:port`, delivers your SSH public key through the workload config path, and renders the canonical SSH command.
+<Cards>
 
-**Custom OCI images** use CAP directly. You build and sign an image, pin it by digest, create an Enclava app, and deploy through the `enclava` CLI. CAP verifies image identity and deployment descriptors before rendering Kubernetes resources for the confidential runtime.
+- [Templates](./getting-started/hosted-template.md)
 
-## Product boundaries
+  The fastest path. A template is a ready-made workload that Enclava maintains for you. `debian-ssh-frp` gives you a confidential Debian machine with a stable SSH endpoint; Enclava delivers your SSH key and prints the SSH command.
+- [Your own container image](./getting-started/manual-oci-deploy.md)
 
-| Layer | What it owns |
-| --- | --- |
-| Enclava PaaS | Hosted console, ZITADEL login, CLI device approval, org views, billing, hosted API keys, support/admin flows, and hosted template orchestration. |
-| CAP API | Authenticated app, deployment, domain, config, keyring, workload artifact, and deploy orchestration APIs. |
-| CAP CLI | User-facing `enclava` commands for login, app setup, deploys, hosted templates, config, ownership, recovery, and status. |
-| CAP engine | Kubernetes manifest rendering, policy artifacts, apply/watch/cleanup, and runtime validation. |
-| `enclava-init` | In-TEE startup sidecar that verifies policy, opens encrypted state, prepares TLS material, and releases readiness only after checks pass. |
+  Full control. Build and sign an image in CI, pin it by digest, and deploy it with the `enclava` CLI. Enclava verifies the digest and signer before the app starts.
+
+</Cards>
 
 ## How a deploy works
 
-```text
-developer
-  -> Enclava CLI or hosted console
-  -> Enclava PaaS, for hosted product flows
-  -> CAP API
-  -> CAP engine
-  -> Kubernetes confidential runtime
-  -> enclava-init inside the Kata guest
-  -> application container
-```
+<Flow>
 
-The application runs as an ordinary container from the developer's point of view, but startup is guarded by confidential-computing checks. CAP binds the image digest, signer identity, org keyring, generated policy, and runtime attestation material together before secrets or state become available.
+1. **You deploy** with the `enclava` CLI or the Enclava console.
+2. **Enclava verifies the image**: its digest and the identity that signed it.
+3. **A TEE starts** on AMD SEV-SNP, with encrypted, isolated memory.
+4. **The TEE proves what is running** through hardware attestation.
+5. **Secrets are released**: encrypted storage opens, TLS and secrets are delivered.
+6. **Your app starts**, only after every check has passed.
+
+</Flow>
+
+Your app runs as an ordinary container, but it only starts after these confidential-computing checks pass. If any check fails, the app does not start and `enclava status` tells you why.
+
+## Start here
+
+<Cards>
+
+- [Quickstart](./getting-started/quickstart.md)
+
+  Install the CLI, log in, and pick a deploy path.
+- [Deploy a template](./getting-started/hosted-template.md)
+
+  A confidential SSH machine in a few commands.
+- [Deploy your own image](./getting-started/manual-oci-deploy.md)
+
+  Build, sign, and deploy a container.
+- [How Enclava protects your app](./concepts/confidential-computing.md)
+
+  What happens inside the TEE.
+
+</Cards>
 
 ## Agent skills
 
-If you operate Enclava through a coding agent (Claude Code, Cursor, Codex, pi, …), install the
+If you use Enclava through a coding agent (Claude Code, Cursor, Codex, pi, …), install the
 [agent skills](https://github.com/enclava-labs/enclava-dev-skills): procedures, contracts, and failure
 triage the agent loads on demand. Clone the repo into your agent's skills directory and
 update it with `git pull`:
@@ -50,10 +75,3 @@ update it with `git pull`:
 ```bash
 git clone https://github.com/enclava-labs/enclava-dev-skills ~/.pi/agent/skills/enclava-dev-skills
 ```
-
-## Start here
-
-- [Quickstart](./getting-started/quickstart.md) explains the recommended path.
-- [Hosted template deployment](./getting-started/hosted-template.md) shows the `debian-ssh-frp` flow.
-- [Manual OCI deployment](./getting-started/manual-oci-deploy.md) shows the lower-level CAP flow.
-- [Confidential computing concepts](./concepts/confidential-computing.md) explains the primitives behind the platform.

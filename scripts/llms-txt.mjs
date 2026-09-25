@@ -14,14 +14,14 @@ const groups = pages.reduce((acc, p) => ((acc[section(p)] ??= []).push(p), acc),
 
 let out = `# Enclava Developer Documentation
 
-> Deploy confidential applications with Enclava PaaS and CAP. Append .md to any page URL for raw markdown.
+> Deploy confidential applications on Enclava. Append .md to any page URL for raw markdown.
 > Agent skills (deploy/operate/troubleshoot procedures for coding agents): https://github.com/enclava-labs/enclava-dev-skills
 
 - [Enclava Developer Documentation](/overview.md)
 `;
-const cap = { cap: 'CAP', paas: 'PaaS' }; // known acronym sections
+const names = { concepts: 'Security Model' }; // sections whose label differs from the folder name
 for (const [g, files] of Object.entries(groups))
-  out += `\n## ${cap[g] ?? g.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}\n${files
+  out += `\n## ${names[g] ?? g.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}\n${files
     .map(f => `- [${title(f)}](${f.replace(/^docs/, '')})`)
     .join('\n')}\n`;
 

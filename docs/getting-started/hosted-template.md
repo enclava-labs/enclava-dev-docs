@@ -2,13 +2,13 @@
 sidebar_position: 2
 ---
 
-# Deploy a Hosted Template
+# Deploy a Template
 
-Hosted templates are workload definitions maintained by Enclava PaaS. Use one when Enclava can manage the runtime shape, sidecars, stable endpoint allocation, and config metadata for you.
+Templates are ready-made workloads maintained by Enclava. Enclava handles the runtime setup, the endpoint, and the platform-side configuration; you only provide your own inputs, such as an SSH key.
 
-## Debian SSH over FRP
+## Debian SSH machine
 
-The supported SSH endpoint template is `debian-ssh-frp`. It deploys a Debian workload with SSH access through the Enclava FRP relay.
+The `debian-ssh-frp` template deploys a confidential Debian machine that you reach over SSH through the Enclava relay.
 
 ```bash
 enclava template list
@@ -16,7 +16,16 @@ enclava template deploy debian-ssh-frp --name shell \
   --ssh-public-key-file ~/.ssh/id_ed25519.pub
 ```
 
-PaaS reserves a stable endpoint on the Enclava relay, stores that non-secret endpoint metadata, and delivers SSH authorized keys through the workload config flow. Users do not provide relay credentials.
+<Flow>
+
+1. **Enclava checks your inputs** and reserves a stable SSH endpoint on its relay.
+2. **The machine starts** inside a TEE and passes its startup checks.
+3. **Your SSH key is delivered** by the CLI straight to the TEE.
+4. **The SSH command is ready**, once the machine and Enclava agree on the endpoint.
+
+</Flow>
+
+You don't need any relay credentials.
 
 ## Get the SSH command
 
@@ -24,25 +33,23 @@ PaaS reserves a stable endpoint on the Enclava relay, stores that non-secret end
 enclava template ssh-command --name shell --wait
 ```
 
-The command has this canonical shape:
+The command looks like this:
 
 ```bash
 ssh -p 20051 user@relay.enclava.me
 ```
 
-The exact port is allocated by PaaS. Browser, CLI, and workload output are expected to agree on the stored `stable_ssh_endpoint`; the platform fails closed if the command is missing or non-canonical.
+The port is assigned to your machine and stays the same across restarts. The CLI and the console check the command the workload reports against the endpoint Enclava reserved; if they don't match, you get an error instead of a command, so you never connect to an unexpected host.
 
-## Template config model
+## What you provide and what Enclava provides
 
-Templates publish metadata for inputs such as labels, descriptions, whether a key is required, whether it is secret, and whether it is platform generated. Plaintext secret values are not stored in PaaS responses.
-
-For the SSH template:
-
-| Value | Owner | Notes |
+| Value | Provided by | Notes |
 | --- | --- | --- |
-| SSH public keys | User | Delivered to the workload through the short-lived config-token path. |
-| Stable SSH endpoint | PaaS | Reserved on the FRP relay and stored as non-secret metadata. |
-| FRP relay credentials | PaaS | Injected from platform-controlled relay configuration. |
+| SSH public keys | You | Delivered straight to the workload inside the TEE. |
+| Stable SSH endpoint | Enclava | Reserved on the relay; not secret. |
+| Relay credentials | Enclava | Configured by the platform; you never handle them. |
+
+Secret template inputs are never shown back to you in plaintext by the console or the CLI.
 
 ## Status
 
@@ -51,4 +58,4 @@ enclava status --app shell
 enclava template ssh-command --name shell --wait --json
 ```
 
-Use JSON output when scripting around deployment status, endpoint readiness, or command handoff.
+Use `--json` when you script around deploy status, endpoint readiness, or the SSH command.

@@ -4,18 +4,26 @@ sidebar_position: 1
 
 # Quickstart
 
-The fastest path is to use the hosted CLI flow against Enclava PaaS. This gives you browser login, organization context, and access to hosted templates without operating CAP yourself.
+Install the `enclava` CLI, log in with your Enclava account, and deploy either a template or your own container image.
+
+<Flow>
+
+1. **Install the CLI**: from a release artifact or from source.
+2. **Log in**: approve the CLI session in your browser.
+3. **Deploy**: a ready-made template or your own signed image.
+4. **Check it's running**: `enclava status` confirms the app passed its checks.
+
+</Flow>
 
 ## Prerequisites
 
 - An Enclava account and organization.
-- The `enclava` CLI from the CAP project or a release artifact.
-- Rust 1.85 or newer when building the CLI from source.
-- For SSH templates, an SSH public key such as `~/.ssh/id_ed25519.pub`.
+- The `enclava` CLI (see below).
+- For the SSH template, an SSH public key such as `~/.ssh/id_ed25519.pub`.
 
 ## Install the CLI
 
-Use a release artifact when one is available. To build the current CLI from source on Debian or Ubuntu (including WSL):
+Use a release artifact when one is available. To build the current CLI from source on Debian or Ubuntu (including WSL), you need Rust 1.85 or newer:
 
 ```bash
 sudo apt-get update
@@ -24,7 +32,7 @@ export ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX=5b9437adeaffbe8f41b13d96ed49d2f5
 cargo install --git https://github.com/enclava-labs/cap --locked enclava-cli
 ```
 
-`ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX` is a public verification key, not a secret. It pins the platform-release signing root accepted by the CLI.
+`ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX` is a public verification key, not a secret. It pins the release signing key the CLI trusts, so the CLI only accepts genuine Enclava platform releases.
 
 ## Log in
 
@@ -33,11 +41,11 @@ enclava login
 enclava whoami
 ```
 
-The CLI supports hosted device login. The hosted console approval route is `/cli/login`; after approval, the CLI stores credentials locally and talks to the shared hosted API surface.
+`login` opens your browser so you can approve the CLI session in the Enclava console. After approval, the CLI stores its credentials locally. `whoami` shows your account and active organization.
 
 ## Choose a deploy path
 
-Use a hosted template when the template already matches your workload:
+Deploy a template when one already matches what you need:
 
 ```bash
 enclava template list
@@ -46,7 +54,7 @@ enclava template deploy debian-ssh-frp --name shell \
 enclava template ssh-command --name shell --wait
 ```
 
-Use manual OCI deployment when you need to deploy your own container image:
+Deploy your own container image when you need to run your own code:
 
 ```bash
 enclava init
@@ -55,22 +63,22 @@ enclava deploy --image <registry>/<image>@sha256:<digest>
 enclava status
 ```
 
-Manual deployments require a digest-pinned image and a signer identity that matches the image signature policy. Hosted templates hide most of that detail behind a supported template contract.
+Your own image must be pinned by digest and signed by the identity you register with `--signer-subject`. Templates handle that for you. [Deploy your own image](./manual-oci-deploy.md) walks through the full flow.
 
-## What to verify after deploy
+## Check the deploy
 
-For hosted SSH templates, verify that the platform and workload agree on the stable endpoint:
+For the SSH template, get the SSH command and check the app status:
 
 ```bash
 enclava template ssh-command --name shell --wait
 enclava status --app shell
 ```
 
-For manual apps, verify rollout and runtime state:
+For your own image, check the rollout and read the logs:
 
 ```bash
 enclava status
 enclava logs
 ```
 
-If the app uses password-mode storage, the first deploy may require an ownership claim and later restarts may require unlock. See [CAP CLI reference](../cap/cli-reference.md).
+If your app uses password-protected storage, the first deploy claims ownership and later restarts need an unlock. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).

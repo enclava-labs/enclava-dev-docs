@@ -14,45 +14,26 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Core Concepts',
+      label: 'Guides',
+      items: [
+        'guides/console',
+        'guides/storage-and-recovery',
+        'guides/security-checklist',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Security Model',
       items: [
         'concepts/confidential-computing',
         'concepts/threat-model',
-        'concepts/deployment-model',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Enclava PaaS',
-      items: [
-        'paas/overview',
-        'paas/cli-and-console',
-        'paas/hosted-templates',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'CAP',
-      items: [
-        'cap/overview',
-        'cap/architecture',
-        'cap/cli-reference',
-        'cap/runtime-verification',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Operations',
-      items: [
-        'operations/production-checklist',
-        'operations/security-checklist',
       ],
     },
     {
       type: 'category',
       label: 'Reference',
       items: [
-        'reference/api-surface',
+        'reference/cli-reference',
         'reference/glossary',
       ],
     },
