@@ -23,11 +23,29 @@ Install the `enclava` CLI, log in with your Enclava account, and deploy either a
 
 ## Install the CLI
 
-Use a release artifact when one is available. To build the current CLI from source on Debian or Ubuntu (including WSL), you need Rust 1.85 or newer:
+macOS and Linux (including WSL):
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y pkg-config libssl-dev
+curl -fsSL https://raw.githubusercontent.com/enclava-labs/cap/main/scripts/install.sh | bash
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/enclava-labs/cap/main/scripts/install.ps1 | iex
+```
+
+The script picks the right binary for your platform, checks it against the signed
+`SHA256SUMS.txt` from the release (and verifies the Sigstore signature when `cosign`
+is installed), and installs it to `~/.enclava/bin` (`%USERPROFILE%\.enclava\bin` on
+Windows). If that directory is not on your `PATH`, the script prints the line to add
+to your shell profile. Set `ENCLAVA_VERSION=vX.Y.Z` to install a specific release,
+or `ENCLAVA_INSTALL_DIR` to change the destination.
+
+To build from source instead (any platform with Rust 1.85 or newer; on Debian or
+Ubuntu including WSL you also need `pkg-config` and `libssl-dev`):
+
+```bash
 export ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX=5b9437adeaffbe8f41b13d96ed49d2f51cd6c266cd8ecc284b0552ec4912b8dd
 cargo install --git https://github.com/enclava-labs/cap --locked enclava-cli
 ```
