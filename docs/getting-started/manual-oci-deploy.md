@@ -176,7 +176,9 @@ with `organization signing authority is missing; run enclava key setup
 `login` (device flow — approve in the browser) → `enclava key setup --backup-out
 <file>` (passphrase prompt; `--passphrase-file`/`--new-passphrase-file` for
 scripts) → `create` → `deploy` (the attended claim — see below) → `enclava key
-backup --out <file>`.
+backup --out <file>` — note the last file is a *second* artifact: the
+`key setup` backup holds the org signing authority, `key backup` exports the
+per-app recovery material.
 :::
 
 ## Deploy

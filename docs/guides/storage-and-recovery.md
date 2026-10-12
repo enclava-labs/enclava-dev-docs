@@ -103,7 +103,9 @@ enclava destroy --app my-app --force --abandon-teardown
 ```
 
 If the teardown could not complete, the previous owner seed may remain in the
-platform key store, and recreating an app with the **same name** is refused:
+platform key store, and recreating an app with the **same name** is refused
+(message as reported by the `enclava` CLI — the platform API's raw text is
+phrased differently but carries the same remediation):
 
 ```
 409 stale_owner_seed (a previous instance's teardown is incomplete: ask the

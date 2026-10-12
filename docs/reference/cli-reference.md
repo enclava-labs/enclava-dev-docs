@@ -79,7 +79,7 @@ Password-mode workloads protect state with owner-controlled material. `claim` an
 | `login` | browser approval of the device flow | `--no-browser` prints the URL and code; the approval itself stays a human step |
 | `key setup` | passphrase prompt | `--passphrase-file`/`--new-passphrase-file` (the `--backup-out` file is owner material — a person should choose where it goes) |
 | first `deploy` / `claim` | **always** (terminal stdin; one-time recovery mnemonic) | none — hand the exact command to a person |
-| `unlock` / `recover` / `change-password` | password prompts | `--password-file` / `--mnemonic-file` / `--new-password-file` |
+| `unlock` / `recover` / `change-password` | password prompts | `--password-file`; `recover --mnemonic-file --new-password-file`; `change-password --current-password-file --new-password-file` |
 | `destroy` | confirmation | `--force` |
 
 ## Organizations and signer identity
