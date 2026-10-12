@@ -19,12 +19,14 @@ Your app's persistent storage is encrypted, and the keys only exist inside your 
 
 On the first claim, the TEE generates a random 32-byte owner seed. Your storage keys are derived from that seed, and the seed is stored wrapped under a key derived from your password (Argon2id plus HKDF). Enclava never sees the password or the seed. Password attempts are rate-limited.
 
-Pass the password from a file so deploys can claim and unlock without a prompt:
+Pass the password from a file so deploys can claim and unlock without a password prompt:
 
 ```bash
 enclava deploy --image <image>@sha256:<digest> \
   --storage-password-file "$HOME/.enclava/my-app-storage-password"
 ```
+
+The file flag replaces the *prompt*, not the attended session: a **first claim** (with or without a file flag) requires a terminal on stdin, because the one-time recovery mnemonic is delivered to that session and the CLI refuses unattended claims until response-loss recovery exists. Unlocks and redeploys run unattended with the file flags (a redeploy whose app's TEE ownership state cannot be read fails closed and needs an attended session).
 
 Or claim and unlock by hand:
 
@@ -84,12 +86,34 @@ enclava destroy --app my-app
 ```
 
 :::danger Destroy deletes your data
-`destroy` always deletes the app's data volumes. The stored, wrapped owner seed is only cleaned up if the app is still running when you destroy it.
+`destroy` deletes the app's data volumes. It also verifies that the confidential
+workload teardown completed — the step that erases the wrapped owner seed from
+the platform key store.
 :::
 
-If you destroy an app that was already stopped or crashed, that key material survives, and a new app with the same name inherits it. You'll see this as:
+If the workload teardown cannot complete (for example the workload is crashed or
+unreachable), the destroy **does not finish**: the app stays in the deleting
+state and stays wired, and the destroy remains retryable — run it again once the
+workload is reachable.
 
-- `enclava claim` returns `already_claimed`, and
-- every unlock fails as if the password were wrong.
+If recovery is ruled out, finish the destroy with an explicit waiver:
 
-To fix it, run `enclava recover` with the **old** app's mnemonic, which still matches the surviving key material. The new app starts with empty storage either way; only the keys carry over.
+```bash
+enclava destroy --app my-app --force --abandon-teardown
+```
+
+If the teardown could not complete, the previous owner seed may remain in the
+platform key store, and recreating an app with the **same name** is refused
+(message as reported by the `enclava` CLI — the platform API's raw text is
+phrased differently but carries the same remediation):
+
+```
+409 stale_owner_seed (a previous instance's teardown is incomplete: ask the
+platform operator to erase the stale owner seed in KBS and clear the recorded
+waiver, or choose a different app name)
+```
+
+The remedies are the two the message names: an operator erases the stale seed
+and clears the recorded waiver, or you pick a different app name. If the
+workload was already gone (or its teardown had completed), no waiver is recorded
+and recreation is unaffected.

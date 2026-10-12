@@ -169,6 +169,18 @@ enclava create \
 
 `create` registers the app, resolves the tag to a digest, and pins the signer identity. `--signer-issuer` defaults to the GitHub Actions OIDC issuer; set it only for a different OIDC provider. The signer subject must match the identity that signed the image, which is the workflow file path. `init` and `prepare` name that file `enclava-deploy.yml`.
 
+:::note First deploy on a fresh account
+A new organization has no signing authority yet, and the first `create` refuses
+with `organization signing authority is missing; run enclava key setup
+--backup-out <offline-backup.json> first`. The full first sequence is:
+`login` (device flow — approve in the browser) → `enclava key setup --backup-out
+<file>` (passphrase prompt; `--passphrase-file`/`--new-passphrase-file` for
+scripts) → `create` → `deploy` (the attended claim — see below) → `enclava key
+backup --out <file>` — note the last file is a *second* artifact: the
+`key setup` backup holds the org signing authority, `key backup` exports the
+per-app recovery material.
+:::
+
 ## Deploy
 
 ```bash
@@ -178,6 +190,16 @@ enclava deploy \
 ```
 
 With `--storage-password-file`, the first deploy waits for the TEE bootstrap endpoint and claims ownership directly; restarts unlock with the same password. No separate `enclava claim` is needed on this path. Without it, `deploy` prompts for the password interactively (or run `enclava claim` first).
+
+:::warning The first claim must run at a real terminal
+The claim is one-time: the TEE returns the recovery mnemonic exactly once, so the
+CLI refuses unattended claims (CI or scripts, no terminal on stdin) until
+response-loss recovery exists. `--storage-password-file` (like `claim
+--password-file`) replaces the *password prompt* and makes recorded output
+(`2>&1 | tee`) safe — it does not lift the terminal requirement. Hand the first
+deploy to a person at a terminal. The mnemonic is saved to the protected local
+keystore and never printed; `enclava key backup` exports it right after.
+:::
 
 ## Verify
 
@@ -226,3 +248,4 @@ enclava auto-unlock enable --image ghcr.io/<org>/<repo>@sha256:<digest>
 - **`portable_verification_material_unavailable`**: Enclava could not find usable signature or provenance material for the image. A common cause is a legacy cosign 2.x `.sig` object without portable DSSE, but registry or referrer errors, missing provenance, malformed bundles, and size limits return the same code. Inspect both the signature and the provenance objects.
 - **First deploy in auto mode is rejected**: set `[unlock] mode = "password"` for the first deploy.
 - **A failed deploy does not roll on a follow-up `deploy`**: a deploy that fails partway can leave the app with `Status: drifted`. Run `enclava destroy --app <name> --force`, then `create` and `deploy` again from scratch.
+- **`destroy` keeps reporting that the confidential workload teardown did not complete**: by design the destroy does not finish — the app stays in the deleting state and stays wired, and the destroy is retryable once the workload is reachable again. If recovery is ruled out, `enclava destroy --app <name> --force --abandon-teardown` finishes it anyway and records a waiver: the previous owner seed may remain in the platform key store, and recreating the same app name is refused with `stale_owner_seed` until an operator erases the stale seed and clears the recorded waiver — or pick a different app name. See [Storage, unlock and recovery](../guides/storage-and-recovery.md#destroying-an-app).

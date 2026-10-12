@@ -26,10 +26,10 @@ enclava deploy --image IMAGE@DIGEST [--set KEY=VALUE] [--set-file KEY=PATH] [--s
 enclava status [--app APP]
 enclava logs [--app APP] [-f] [--log-private-key-file PATH]
 enclava rollback [--to DEPLOYMENT_ID]
-enclava destroy [--app APP] [--force]
+enclava destroy [--app APP] [--force] [--abandon-teardown]
 ```
 
-`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on the first deploy (password mode) and unlocks on redeploys. `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`.
+`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on the first deploy (password mode) and unlocks on redeploys. The **first claim requires a terminal on stdin** — the file flags replace the password prompt, not the attended-session rule (see [Storage, unlock and recovery](../guides/storage-and-recovery.md)). `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`. `destroy` verifies the confidential workload teardown completed; `--abandon-teardown` finishes the destroy anyway when it cannot (records a waiver — same-name recreation is then refused `stale_owner_seed` until an operator erases the stale seed and clears the waiver).
 
 ## Config and secrets
 
@@ -63,11 +63,24 @@ enclava change-password [--app APP] [--current-password-file PATH] [--new-passwo
 enclava auto-unlock enable --image IMAGE@DIGEST [--password-file PATH]   # needs local enclava.toml
 enclava auto-unlock disable --image IMAGE@DIGEST [--password-file PATH]  # needs local enclava.toml
 enclava key status
+enclava key setup --backup-out "$HOME/.enclava/org-signing-backup.json" [--passphrase-file PATH] [--new-passphrase-file PATH]  # create the org signing authority; required before a fresh org's first create
 enclava key backup --out "$HOME/.enclava/my-app-recovery.json" [--new-passphrase-file PATH]
 enclava key restore <backup-file> [--force] [--passphrase-file PATH]
 ```
 
-Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags in scripts. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).
+Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags to skip the prompts. A first `claim` — with or without a file flag — still requires a terminal on stdin, because the one-time recovery mnemonic is delivered to that session; `unlock`, `recover`, and `change-password` run unattended with their file flags. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).
+
+## Which commands need a terminal
+
+| Command | Interactive by default | Unattended path |
+| --- | --- | --- |
+| `init` | prompts for app name and port | `--app-name`/`--port`, or a non-interactive session (deterministic defaults) |
+| `prepare` | confirms before overwriting existing files | `--yes` |
+| `login` | browser approval of the device flow | `--no-browser` prints the URL and code; the approval itself stays a human step |
+| `key setup` | passphrase prompt | `--passphrase-file`/`--new-passphrase-file` (the `--backup-out` file is owner material — a person should choose where it goes) |
+| first `deploy` / `claim` | **always** (terminal stdin; one-time recovery mnemonic) | none — hand the exact command to a person |
+| `unlock` / `recover` / `change-password` | password prompts | `--password-file`; `recover --mnemonic-file --new-password-file`; `change-password --current-password-file --new-password-file` |
+| `destroy` | confirmation | `--force` |
 
 ## Organizations and signer identity
 
