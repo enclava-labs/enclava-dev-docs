@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 # CLI Reference
@@ -101,6 +101,9 @@ non-interactive session refuses with the exact flag it needs instead of blocking
   app's data volumes; the default double confirmation exists to stop accidents.
   Automation should pass `--force` only when a person explicitly asked for the
   deletion.
+
+Using a coding agent? The [agent skills](https://github.com/enclava-labs/enclava-dev-skills)
+package these rules as loadable procedures, contracts, and failure triage.
 
 ## Organizations and signer identity
 

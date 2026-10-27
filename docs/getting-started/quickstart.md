@@ -17,7 +17,7 @@ Install the `enclava` CLI, log in with your Enclava account, and deploy either a
 
 ## Prerequisites
 
-- An Enclava account and organization.
+- An Enclava account and organization — [request access](https://enclava.dev/get-started) if you don't have one.
 - The `enclava` CLI (see below).
 - For the SSH template, an SSH public key such as `~/.ssh/id_ed25519.pub`.
 
