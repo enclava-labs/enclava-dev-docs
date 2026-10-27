@@ -26,7 +26,7 @@ enclava deploy --image <image>@sha256:<digest> \
   --storage-password-file "$HOME/.enclava/my-app-storage-password"
 ```
 
-The file flag replaces the *prompt*, not the attended session: a **first claim** (with or without a file flag) requires a terminal on stdin, because the one-time recovery mnemonic is delivered to that session and the CLI refuses unattended claims until response-loss recovery exists. Unlocks and redeploys run unattended with the file flags (a redeploy whose app's TEE ownership state cannot be read fails closed and needs an attended session).
+The file flag makes the whole flow unattended, first claim included: the one-time recovery mnemonic is written to the protected local keystore (never shown) instead of being delivered to a terminal. Run `enclava key backup` right after the first deploy so the recovery material has a durable copy. Unlocks and redeploys run unattended with the file flags (a redeploy whose app's TEE ownership state cannot be read fails closed).
 
 Or claim and unlock by hand:
 

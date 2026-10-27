@@ -30,6 +30,7 @@ enclava login
 | `--no-browser` | Approve from another device, for example when logging in over SSH. |
 | `--org ORG` | Scope the session to one organization. |
 | `--approve-logs` | Allow this CLI session to read your app logs. |
+| `--replace-session` | Replace an already-saved session without the confirmation prompt (unattended runs). |
 
 Check who you are logged in as with `enclava whoami`, and end the session with `enclava logout`.
 

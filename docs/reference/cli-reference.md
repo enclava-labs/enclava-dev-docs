@@ -9,12 +9,12 @@ The `enclava` CLI deploys and operates your apps on Enclava. Run `enclava <comma
 ## Account and context
 
 ```bash
-enclava login [--no-browser] [--org ORG] [--approve-logs]
+enclava login [--no-browser] [--org ORG] [--approve-logs] [--replace-session]
 enclava whoami
 enclava logout
 ```
 
-`login` opens the console in your browser to approve the session. Use `--no-browser` to approve from another device, `--org` to scope the session to one organization, and `--approve-logs` to let the session read app logs. See [Console and CLI login](../guides/console.md).
+`login` opens the console in your browser to approve the session. Use `--no-browser` to approve from another device, `--org` to scope the session to one organization, `--approve-logs` to let the session read app logs, and `--replace-session` to replace an already-saved session without the confirmation prompt. See [Console and CLI login](../guides/console.md).
 
 ## App lifecycle
 
@@ -23,13 +23,13 @@ enclava init [--app-name NAME] [--port PORT]  # generate enclava.toml (prompts w
 enclava prepare [--yes]                       # write enclava.toml + CI signing workflow
 enclava create [--image IMAGE] --signer-subject SUBJECT [--signer-issuer URL]
 enclava deploy --image IMAGE@DIGEST [--set KEY=VALUE] [--set-file KEY=PATH] [--storage-password-file PATH]
-enclava status [--app APP]
+enclava status [--app APP] [--json]
 enclava logs [--app APP] [-f] [--log-private-key-file PATH]
 enclava rollback [--to DEPLOYMENT_ID]
 enclava destroy [--app APP] [--force] [--abandon-teardown]
 ```
 
-`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on the first deploy (password mode) and unlocks on redeploys. The **first claim requires a terminal on stdin** — the file flags replace the password prompt, not the attended-session rule (see [Storage, unlock and recovery](../guides/storage-and-recovery.md)). `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`. `destroy` verifies the confidential workload teardown completed; `--abandon-teardown` finishes the destroy anyway when it cannot (records a waiver — same-name recreation is then refused `stale_owner_seed` until an operator erases the stale seed and clears the waiver).
+`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on the first deploy (password mode) and unlocks on redeploys — unattended runs included: the one-time recovery mnemonic is saved to the protected local keystore instead of being shown (run `enclava key backup` right after the first deploy — see [Storage, unlock and recovery](../guides/storage-and-recovery.md)). `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`. `--json` prints machine-readable output. `destroy` verifies the confidential workload teardown completed; `--abandon-teardown` finishes the destroy anyway when it cannot (records a waiver — same-name recreation is then refused `stale_owner_seed` until an operator erases the stale seed and clears the waiver).
 
 ## Config and secrets
 
@@ -68,19 +68,39 @@ enclava key backup --out "$HOME/.enclava/my-app-recovery.json" [--new-passphrase
 enclava key restore <backup-file> [--force] [--passphrase-file PATH]
 ```
 
-Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags to skip the prompts. A first `claim` — with or without a file flag — still requires a terminal on stdin, because the one-time recovery mnemonic is delivered to that session; `unlock`, `recover`, and `change-password` run unattended with their file flags. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).
+Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags to run unattended — a first `claim` included: the one-time recovery mnemonic is written to the protected local keystore and never printed, so run `enclava key backup` right after. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).
 
 ## Which commands need a terminal
+
+Every interactive input has a flag alternative, and a command that would prompt in a
+non-interactive session refuses with the exact flag it needs instead of blocking.
 
 | Command | Interactive by default | Unattended path |
 | --- | --- | --- |
 | `init` | prompts for app name and port | `--app-name`/`--port`, or a non-interactive session (deterministic defaults) |
 | `prepare` | confirms before overwriting existing files | `--yes` |
-| `login` | browser approval of the device flow | `--no-browser` prints the URL and code; the approval itself stays a human step |
+| `login` | browser approval of the device flow | `--no-browser` prints the URL and code; the approval itself stays a human step. `--replace-session` skips the "replace existing session?" confirmation (or run `enclava logout` first) |
 | `key setup` | passphrase prompt | `--passphrase-file`/`--new-passphrase-file` (the `--backup-out` file is owner material — a person should choose where it goes) |
-| first `deploy` / `claim` | **always** (terminal stdin; one-time recovery mnemonic) | none — hand the exact command to a person |
+| first `deploy` / `claim` | prompts for the storage password | `--storage-password-file`/`--password-file`. The one-time recovery mnemonic is saved to the protected local keystore and never printed — run `enclava key backup` after |
 | `unlock` / `recover` / `change-password` | password prompts | `--password-file`; `recover --mnemonic-file --new-password-file`; `change-password --current-password-file --new-password-file` |
-| `destroy` | confirmation | `--force` |
+| `rollback` | confirms the target deployment | `--to DEPLOYMENT_ID` |
+| `destroy` | double confirmation (yes/no, then type the app name) | `--force` — deliberate, see below |
+
+## Automation and agents
+
+- **`--no-input` (or env `ENCLAVA_NO_INPUT=1`) makes every command behave as if
+  there is no terminal**: prompts with safe defaults take them (`init`), everything
+  else fails naming the flag that replaces the prompt — nothing ever stops waiting
+  for input. Any value except a falsey one (empty, `0`, `f`, `false`, `n`, `no`,
+  `off`) disables prompts.
+- **Secrets come from files** (`--password-file`, `--storage-password-file`,
+  `--set-file`, …), never from process arguments.
+- **`enclava status --json`** for programmatic reads: a stable shape where `null`
+  means "not verified", never a value that reads like a verified result.
+- **Treat `destroy --force` as a deliberate destructive act.** `destroy` deletes the
+  app's data volumes; the default double confirmation exists to stop accidents.
+  Automation should pass `--force` only when a person explicitly asked for the
+  deletion.
 
 ## Organizations and signer identity
 
