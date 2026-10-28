@@ -48,6 +48,8 @@ Your app runs as an ordinary container, but it only starts after these confident
 
 ## Start here
 
+If you don't have an account yet, [request access](https://enclava.dev/get-started).
+
 <Cards>
 
 - [Quickstart](./getting-started/quickstart.md)
@@ -73,5 +75,8 @@ triage the agent loads on demand. Clone the repo into your agent's skills direct
 update it with `git pull`:
 
 ```bash
-git clone https://github.com/enclava-labs/enclava-dev-skills ~/.pi/agent/skills/enclava-dev-skills
+git clone https://github.com/enclava-labs/enclava-dev-skills ~/.agents/skills/enclava-dev-skills
 ```
+
+Agent-specific paths and a copy-based fallback are in the repo's
+[install section](https://github.com/enclava-labs/enclava-dev-skills#install).

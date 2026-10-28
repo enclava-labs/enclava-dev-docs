@@ -31,7 +31,7 @@ enclava init
 - at most 63 characters
 - not a reserved system name
 
-`enclava prepare` writes the same files without prompting on a first run. If either file already exists, it asks before overwriting; pass `--yes` to skip that confirmation. Without a TTY and without `--yes`, it fails with "not a terminal". In CI, run `prepare` once, commit both files, and don't re-run it over them.
+`enclava prepare` writes the same files without prompting on a first run. If either file already exists, it asks before overwriting; pass `--yes` to skip that confirmation. In a non-interactive session without `--yes`, it refuses and names the flag. In CI, run `prepare` once, commit both files, and don't re-run it over them.
 
 The generated config:
 
@@ -175,7 +175,7 @@ with `organization signing authority is missing; run enclava key setup
 --backup-out <offline-backup.json> first`. The full first sequence is:
 `login` (device flow — approve in the browser) → `enclava key setup --backup-out
 <file>` (passphrase prompt; `--passphrase-file`/`--new-passphrase-file` for
-scripts) → `create` → `deploy` (the attended claim — see below) → `enclava key
+scripts) → `create` → `deploy` (the ownership claim — see below) → `enclava key
 backup --out <file>` — note the last file is a *second* artifact: the
 `key setup` backup holds the org signing authority, `key backup` exports the
 per-app recovery material.
@@ -191,14 +191,14 @@ enclava deploy \
 
 With `--storage-password-file`, the first deploy waits for the TEE bootstrap endpoint and claims ownership directly; restarts unlock with the same password. No separate `enclava claim` is needed on this path. Without it, `deploy` prompts for the password interactively (or run `enclava claim` first).
 
-:::warning The first claim must run at a real terminal
-The claim is one-time: the TEE returns the recovery mnemonic exactly once, so the
-CLI refuses unattended claims (CI or scripts, no terminal on stdin) until
-response-loss recovery exists. `--storage-password-file` (like `claim
---password-file`) replaces the *password prompt* and makes recorded output
-(`2>&1 | tee`) safe — it does not lift the terminal requirement. Hand the first
-deploy to a person at a terminal. The mnemonic is saved to the protected local
-keystore and never printed; `enclava key backup` exports it right after.
+:::warning The one-time recovery mnemonic needs a durable home
+The claim is one-time: the TEE returns the recovery mnemonic exactly once. The CLI
+writes it to its protected local keystore and never prints it, so unattended runs
+(CI, scripts) work with `--storage-password-file` (like `claim --password-file`).
+Run `enclava key backup --out <file>` right after the first deploy and have a person
+keep that file somewhere durable — without it, a lost storage password means the
+data can't be opened again. In automation, add `--no-input` so no command can stop
+at a prompt.
 :::
 
 ## Verify
@@ -207,7 +207,7 @@ keystore and never printed; `enclava key backup` exports it right after.
 enclava status
 ```
 
-A healthy deploy shows `Status: running`, `TEE: unlocked`, `Unlock: unlocked`. On failure, `status` shows the `tee_error` from `enclava-init`. Check it first when a deploy stalls.
+A healthy deploy shows `Status: running`, `TEE: unlocked`, `Unlock: unlocked`. On failure, `status` shows the `tee_error` from `enclava-init`. Check it first when a deploy stalls. For scripting, `enclava status --json` prints the same facts in a stable JSON shape.
 
 ## Config and secrets
 

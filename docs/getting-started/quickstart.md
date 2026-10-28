@@ -17,7 +17,7 @@ Install the `enclava` CLI, log in with your Enclava account, and deploy either a
 
 ## Prerequisites
 
-- An Enclava account and organization.
+- An Enclava account and organization — [request access](https://enclava.dev/get-started) if you don't have one.
 - The `enclava` CLI (see below).
 - For the SSH template, an SSH public key such as `~/.ssh/id_ed25519.pub`.
 
@@ -46,11 +46,16 @@ To build from source instead (any platform with Rust 1.85 or newer; on Debian or
 Ubuntu including WSL you also need `pkg-config` and `libssl-dev`):
 
 ```bash
-export ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX=5b9437adeaffbe8f41b13d96ed49d2f51cd6c266cd8ecc284b0552ec4912b8dd
 cargo install --git https://github.com/enclava-labs/cap --locked enclava-cli
 ```
 
-`ENCLAVA_PLATFORM_RELEASE_ROOT_PUBKEY_HEX` is a public verification key, not a secret. It pins the release signing key the CLI trusts, so the CLI only accepts genuine Enclava platform releases.
+:::note
+Release artifacts are the right install for real deployments: they embed the trust
+profiles the CLI uses to verify platform releases. A from-source build embeds the
+repository's development fixture profiles instead, so platform-verifying commands
+fail against the hosted service with `no trusted profile for API origin` — from-
+source builds are for developing against a development platform.
+:::
 
 ## Log in
 
