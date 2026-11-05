@@ -25,7 +25,7 @@ enclava create [--image IMAGE] --signer-subject SUBJECT [--signer-issuer URL]
 enclava deploy --image IMAGE@DIGEST [--set KEY=VALUE] [--set-file KEY=PATH] [--storage-password-file PATH]
 enclava status [--app APP] [--json]
 enclava logs [--app APP] [-f] [--log-private-key-file PATH]
-enclava log-key generate|list|select|revoke [--app APP]  # manage tenant log keys
+enclava log-key generate|list|select|revoke [--app APP]
 enclava rollback [--to DEPLOYMENT_ID]
 enclava destroy [--app APP] [--force] [--abandon-teardown]
 ```
@@ -36,7 +36,7 @@ enclava destroy [--app APP] [--force] [--abandon-teardown]
 
 ```bash
 enclava config set FEATURE_FLAG=enabled  # local enclava.toml only; no --app
-enclava config get [--app APP] [--json]     # lists names, never plaintext values
+enclava config get [--app APP] [--json]   # lists names, never plaintext values
 enclava config unset KEY [--app APP]
 ```
 
@@ -98,8 +98,9 @@ non-interactive session refuses with the exact flag it needs instead of blocking
   `--set-file`, …), never from process arguments.
 - **`--json` on data-returning commands** for programmatic reads: `whoami`,
   `status`, `config get`, `log-key list`, `template list`, `key status` (and
-  `domains list` where custom domains are enabled) all print a stable shape where
-  `null` means "not verified", never a value that reads like a verified result.
+  `domains list` where custom domains are enabled) all print a stable shape:
+  every key is always present, and absent or unverified values are `null` —
+  never a value that reads like a verified result.
   `log-key list` uses one key-entry shape for both its app- and org-scoped views.
 - **Treat `destroy --force` as a deliberate destructive act.** `destroy` deletes the
   app's data volumes; the default double confirmation exists to stop accidents.
