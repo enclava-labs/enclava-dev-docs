@@ -10,7 +10,7 @@ The `enclava` CLI deploys and operates your apps on Enclava. Run `enclava <comma
 
 ```bash
 enclava login [--no-browser] [--org ORG] [--approve-logs] [--replace-session]
-enclava whoami
+enclava whoami [--json]
 enclava logout
 ```
 
@@ -25,6 +25,7 @@ enclava create [--image IMAGE] --signer-subject SUBJECT [--signer-issuer URL]
 enclava deploy --image IMAGE@DIGEST [--set KEY=VALUE] [--set-file KEY=PATH] [--storage-password-file PATH]
 enclava status [--app APP] [--json]
 enclava logs [--app APP] [-f] [--log-private-key-file PATH]
+enclava log-key generate|list|select|revoke [--app APP]
 enclava rollback [--to DEPLOYMENT_ID]
 enclava destroy [--app APP] [--force] [--abandon-teardown]
 ```
@@ -35,7 +36,7 @@ enclava destroy [--app APP] [--force] [--abandon-teardown]
 
 ```bash
 enclava config set FEATURE_FLAG=enabled  # local enclava.toml only; no --app
-enclava config get [--app APP]            # lists names, never plaintext values
+enclava config get [--app APP] [--json]   # lists names, never plaintext values
 enclava config unset KEY [--app APP]
 ```
 
@@ -46,12 +47,12 @@ Inline `config set` values may appear in process listings and shell history. Use
 ## Templates
 
 ```bash
-enclava template list
+enclava template list [--json]
 enclava template deploy debian-ssh-frp --name shell --ssh-public-key-file ~/.ssh/id_ed25519.pub
 enclava template ssh-command --name shell --wait [--json]
 ```
 
-`--json` prints machine-readable deployment and endpoint details. See [Deploy a template](../getting-started/hosted-template.md).
+`--json` prints machine-readable output — template details for `list`, deployment and endpoint details for `ssh-command`. See [Deploy a template](../getting-started/hosted-template.md).
 
 ## Ownership and recovery
 
@@ -62,7 +63,7 @@ enclava recover [--app APP] [--mnemonic-file PATH] [--new-password-file PATH]
 enclava change-password [--app APP] [--current-password-file PATH] [--new-password-file PATH]
 enclava auto-unlock enable --image IMAGE@DIGEST [--password-file PATH]   # needs local enclava.toml
 enclava auto-unlock disable --image IMAGE@DIGEST [--password-file PATH]  # needs local enclava.toml
-enclava key status
+enclava key status [--json]
 enclava key setup --backup-out "$HOME/.enclava/org-signing-backup.json" [--passphrase-file PATH] [--new-passphrase-file PATH]  # create the org signing authority; required before a fresh org's first create
 enclava key backup --out "$HOME/.enclava/my-app-recovery.json" [--new-passphrase-file PATH]
 enclava key restore <backup-file> [--force] [--passphrase-file PATH]
@@ -95,8 +96,12 @@ non-interactive session refuses with the exact flag it needs instead of blocking
   `off`) disables prompts.
 - **Secrets come from files** (`--password-file`, `--storage-password-file`,
   `--set-file`, …), never from process arguments.
-- **`enclava status --json`** for programmatic reads: a stable shape where `null`
-  means "not verified", never a value that reads like a verified result.
+- **`--json` on data-returning commands** for programmatic reads: `whoami`,
+  `status`, `config get`, `log-key list`, `template list`, `key status` (and
+  `domains list` where custom domains are enabled) all print a stable shape:
+  every key is always present, and absent or unverified values are `null` —
+  never a value that reads like a verified result.
+  `log-key list` uses one key-entry shape for both its app- and org-scoped views.
 - **Treat `destroy --force` as a deliberate destructive act.** `destroy` deletes the
   app's data volumes; the default double confirmation exists to stop accidents.
   Automation should pass `--force` only when a person explicitly asked for the
