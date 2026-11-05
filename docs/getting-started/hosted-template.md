@@ -58,4 +58,4 @@ enclava status --app shell
 enclava template ssh-command --name shell --wait --json
 ```
 
-Use `--json` when you script around deploy status, endpoint readiness, or the SSH command.
+Use `--json` when you script around template listing (`template list --json`), deploy status (`status --json`), endpoint readiness, or the SSH command (`template ssh-command --json`).
