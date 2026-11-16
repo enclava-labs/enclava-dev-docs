@@ -10,6 +10,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/quickstart',
         'getting-started/hosted-template',
         'getting-started/manual-oci-deploy',
+        'getting-started/examples',
       ],
     },
     {
@@ -17,6 +18,7 @@ const sidebars: SidebarsConfig = {
       label: 'Guides',
       items: [
         'guides/console',
+        'guides/attestation-in-your-app',
         'guides/storage-and-recovery',
         'guides/security-checklist',
       ],
