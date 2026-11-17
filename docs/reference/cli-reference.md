@@ -30,7 +30,7 @@ enclava rollback [--to DEPLOYMENT_ID]
 enclava destroy [--app APP] [--force] [--abandon-teardown]
 ```
 
-`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on the first deploy (password mode) and unlocks on redeploys — unattended runs included: the one-time recovery mnemonic is saved to the protected local keystore instead of being shown (run `enclava key backup` right after the first deploy — see [Storage, unlock and recovery](../guides/storage-and-recovery.md)). `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`. `--json` prints machine-readable output. `destroy` verifies the confidential workload teardown completed; `--abandon-teardown` finishes the destroy anyway when it cannot (records a waiver — same-name recreation is then refused `stale_owner_seed` until an operator erases the stale seed and clears the waiver).
+`deploy` requires a digest-pinned image and local `enclava.toml`. `--storage-password-file` claims ownership on the first deploy (password mode) and unlocks on redeploys — unattended runs included: the one-time recovery mnemonic is saved to the protected local keystore instead of being shown (run `enclava key backup` right after the first deploy — and after every later claim; see [Storage, unlock and recovery](../guides/storage-and-recovery.md)). `--set-file` delivers a secret from a file without exposing it in process arguments. `logs` requires a tenant-held log key created with `enclava log-key generate --app <app> --key-id <id>`. `--json` prints machine-readable output. `destroy` verifies the confidential workload teardown completed; `--abandon-teardown` finishes the destroy anyway when it cannot (records a waiver — same-name recreation is then refused `stale_owner_seed` until an operator erases the stale seed and clears the waiver).
 
 ## Config and secrets
 
@@ -69,7 +69,7 @@ enclava key backup --out "$HOME/.enclava/my-app-recovery.json" [--new-passphrase
 enclava key restore <backup-file> [--force] [--passphrase-file PATH]
 ```
 
-Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags to run unattended — a first `claim` included: the one-time recovery mnemonic is written to the protected local keystore and never printed, so run `enclava key backup` right after. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).
+Password-mode workloads protect state with owner-controlled material. `claim` and `unlock` run automatically when `deploy` is given `--storage-password-file`. Run the standalone commands to enter the password interactively, or pass their `--*-file` flags to run unattended — a first `claim` included: the one-time recovery mnemonic is written to the protected local keystore and never printed, so run `enclava key backup` right after. Password prompts are written to stderr, so if you capture output with `2>&1 | tee`, use the file flag instead of the prompt. Back up recovery material right after the first deploy and after every later claim — the backup is an org-scoped snapshot (keystore seed plus every stored app mnemonic), so the latest file is the only one you need. See [Storage, unlock and recovery](../guides/storage-and-recovery.md).
 
 ## Which commands need a terminal
 
@@ -82,7 +82,7 @@ non-interactive session refuses with the exact flag it needs instead of blocking
 | `prepare` | confirms before overwriting existing files | `--yes` |
 | `login` | browser approval of the device flow | `--no-browser` prints the URL and code; the approval itself stays a human step. `--replace-session` skips the "replace existing session?" confirmation (or run `enclava logout` first) |
 | `key setup` | passphrase prompt | `--passphrase-file`/`--new-passphrase-file` (the `--backup-out` file is owner material — a person should choose where it goes) |
-| first `deploy` / `claim` | prompts for the storage password | `--storage-password-file`/`--password-file`. The one-time recovery mnemonic is saved to the protected local keystore and never printed — run `enclava key backup` after |
+| first `deploy` / `claim` | prompts for the storage password | `--storage-password-file`/`--password-file`. The one-time recovery mnemonic is saved to the protected local keystore and never printed — run `enclava key backup` after (and after every later claim; the backup snapshots the whole org keystore) |
 | `unlock` / `recover` / `change-password` | password prompts | `--password-file`; `recover --mnemonic-file --new-password-file`; `change-password --current-password-file --new-password-file` |
 | `rollback` | confirms the target deployment | `--to DEPLOYMENT_ID` |
 | `destroy` | double confirmation (yes/no, then type the app name) | `--force` — deliberate, see below |
