@@ -21,7 +21,7 @@ Enclava protects your app from the infrastructure. These steps are on your side.
 ## Storage and recovery
 
 - Use a strong storage password and keep it in a password manager or a protected file.
-- Run `enclava key backup` right after the first deploy.
+- Run `enclava key backup` right after the first deploy — and after every later claim. The backup is an org-scoped snapshot of the keystore seed plus every stored app mnemonic; the latest file is the only one you need.
 - Store recovery files outside source repositories, and limit access to the people who administer the app.
 
 ## Your application

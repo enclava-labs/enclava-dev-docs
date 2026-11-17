@@ -26,7 +26,7 @@ enclava deploy --image <image>@sha256:<digest> \
   --storage-password-file "$HOME/.enclava/my-app-storage-password"
 ```
 
-The file flag makes the whole flow unattended, first claim included: the one-time recovery mnemonic is written to the protected local keystore (never shown) instead of being delivered to a terminal. Run `enclava key backup` right after the first deploy so the recovery material has a durable copy. Unlocks and redeploys run unattended with the file flags (a redeploy whose app's TEE ownership state cannot be read fails closed).
+The file flag makes the whole flow unattended, first claim included: the one-time recovery mnemonic is written to the protected local keystore (never shown) instead of being delivered to a terminal. Run `enclava key backup` right after the first deploy — and again after every later claim — so the recovery material has a durable copy. The backup is an org-scoped snapshot (the keystore seed plus every app mnemonic stored at that moment); the latest file is the only one you need, and earlier backups omit apps claimed later. Unlocks and redeploys run unattended with the file flags (a redeploy whose app's TEE ownership state cannot be read fails closed).
 
 Or claim and unlock by hand:
 

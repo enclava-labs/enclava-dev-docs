@@ -178,7 +178,9 @@ with `organization signing authority is missing; run enclava key setup
 scripts) → `create` → `deploy` (the ownership claim — see below) → `enclava key
 backup --out <file>` — note the last file is a *second* artifact: the
 `key setup` backup holds the org signing authority, `key backup` exports the
-per-app recovery material.
+recovery material stored so far — an org-scoped snapshot (keystore seed plus
+every stored app mnemonic), so re-run it after each new claim; the latest file
+is the only one you need.
 :::
 
 ## Deploy
@@ -195,7 +197,8 @@ With `--storage-password-file`, the first deploy waits for the TEE bootstrap end
 The claim is one-time: the TEE returns the recovery mnemonic exactly once. The CLI
 writes it to its protected local keystore and never prints it, so unattended runs
 (CI, scripts) work with `--storage-password-file` (like `claim --password-file`).
-Run `enclava key backup --out <file>` right after the first deploy and have a person
+Run `enclava key backup --out <file>` right after the first deploy — and after
+every later claim — and have a person
 keep that file somewhere durable — without it, a lost storage password means the
 data can't be opened again. In automation, add `--no-input` so no command can stop
 at a prompt.
