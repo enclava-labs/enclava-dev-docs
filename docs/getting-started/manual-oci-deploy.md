@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Deploy Your Own Image
 
-Use this path to run your own container image on Enclava instead of a template. You build and sign the image in CI, register the app with its signer identity, and deploy it by digest.
+Use this path to run your own container image on Enclava instead of a template. You build and sign the image in CI, register the app with its signer identity, and deploy it by digest. For complete runnable applications built this way, see the [example apps](./examples.md) — deploy a pre-built one in minutes or fork it and build your own.
 
 ## Prerequisites
 
