@@ -119,7 +119,7 @@ enclava domains list --app APP [--json]
 enclava domains remove DOMAIN --app APP
 ```
 
-`domains add` creates an ownership challenge and prints **two records to publish in your own zone**: the ownership TXT at `_enclava-challenge.<domain>` (value `enclava-domain-verification=<token>`), and — for domains outside the platform's zone — the ACME DNS-01 CNAME `_acme-challenge.<domain>` pointing at `<domain>.acme.<platform-zone>`. Use the exact names and values the command prints. `domains verify` re-checks both records live on every run and must pass before a deploy attaches the domain (see [Custom domains](../guides/custom-domains.md) for the flow and the renewal guardrail).
+`domains add` creates an ownership challenge and prints **two records to publish in your own zone**: the ownership TXT at `_enclava-challenge.<domain>` (value `enclava-domain-verification=<token>`), and — for domains outside the platform's zone — the ACME DNS-01 CNAME `_acme-challenge.<domain>` pointing at `<domain>.acme.<platform-zone>`. Use the exact names and values the command prints. `domains verify` re-checks the ownership TXT live on every run - and the ACME CNAME where it applies (domains outside the platform's zone) - and must pass before a deploy attaches the domain (see [Custom domains](../guides/custom-domains.md) for the flow and the renewal guardrail).
 
 With `--json`, `domains add` prints `txt_record_name`, `txt_record_value`, `acme_cname_name`, `acme_cname_target` (the two `acme_*` keys are `null` for domains already inside the platform zone), plus `domain`, `expires_at`, and `instructions`. `domains verify` fails with `acme_delegation_missing` when the CNAME is missing or points at the wrong target, and the message carries the expected name/target pair.
 
