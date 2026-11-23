@@ -34,7 +34,7 @@ enclava domains add app.example.com --app myapp
 enclava domains verify app.example.com --app myapp
 ```
 
-Verification checks the ownership TXT **and** the ACME CNAME live, every time it runs. Only after it passes should you deploy (or redeploy) with the domain attached — a domain is not active until verify passes, and the certificate is issued when the workload boots.
+Verification checks the ownership TXT live, every time it runs — and, where the CNAME applies (domains outside the platform zone, on deployments that issue certificates through DNS-01), the ACME CNAME too. Only after it passes should you deploy (or redeploy) with the domain attached — a domain is not active until verify passes, and the certificate is issued when the workload boots.
 
 If the CNAME is missing or points at the wrong target, `verify` fails with `acme_delegation_missing` and prints the expected name/target pair:
 
