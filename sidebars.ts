@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
         'guides/attestation-in-your-app',
         'guides/storage-and-recovery',
         'guides/security-checklist',
+        'guides/custom-domains',
       ],
     },
     {

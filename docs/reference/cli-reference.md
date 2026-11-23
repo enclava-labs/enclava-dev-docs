@@ -97,8 +97,8 @@ non-interactive session refuses with the exact flag it needs instead of blocking
 - **Secrets come from files** (`--password-file`, `--storage-password-file`,
   `--set-file`, …), never from process arguments.
 - **`--json` on data-returning commands** for programmatic reads: `whoami`,
-  `status`, `config get`, `log-key list`, `template list`, `key status` (and
-  `domains list` where custom domains are enabled) all print a stable shape:
+  `status`, `config get`, `log-key list`, `template list`, `key status`, and
+  `domains list` all print a stable shape:
   every key is always present, and absent or unverified values are `null` —
   never a value that reads like a verified result.
   `log-key list` uses one key-entry shape for both its app- and org-scoped views.
@@ -109,6 +109,19 @@ non-interactive session refuses with the exact flag it needs instead of blocking
 
 Using a coding agent? The [agent skills](https://github.com/enclava-labs/enclava-dev-skills)
 package these rules as loadable procedures, contracts, and failure triage.
+
+## Custom domains
+
+```bash
+enclava domains add DOMAIN --app APP
+enclava domains verify DOMAIN --app APP
+enclava domains list --app APP [--json]
+enclava domains remove DOMAIN --app APP
+```
+
+`domains add` creates an ownership challenge and prints **two records to publish in your own zone**: the ownership TXT at `_enclava-challenge.<domain>` (value `enclava-domain-verification=<token>`), and — for domains outside the platform's zone — the ACME DNS-01 CNAME `_acme-challenge.<domain>` pointing at `<domain>.acme.<platform-zone>`. Use the exact names and values the command prints. `domains verify` re-checks both records live on every run and must pass before a deploy attaches the domain (see [Custom domains](../guides/custom-domains.md) for the flow and the renewal guardrail).
+
+With `--json`, `domains add` prints `txt_record_name`, `txt_record_value`, `acme_cname_name`, `acme_cname_target` (the two `acme_*` keys are `null` for domains already inside the platform zone), plus `domain`, `expires_at`, and `instructions`. `domains verify` fails with `acme_delegation_missing` when the CNAME is missing or points at the wrong target, and the message carries the expected name/target pair.
 
 ## Organizations and signer identity
 
