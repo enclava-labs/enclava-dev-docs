@@ -6,6 +6,8 @@ sidebar_position: 4
 
 Your app gets a platform domain by default (`<app>.<platform-zone>`). With a custom domain you can serve your own hostname — `app.example.com` — on the same confidential deployment. The certificate for it is issued **inside the enclave** via ACME DNS-01: the private key is generated in the TEE and never leaves it. That is the point of the feature — end-to-end TLS with your name, without anyone (including Enclava operators) holding your key.
 
+> **Hosted availability.** On the hosted platform the `enclava domains` commands answer `501 not_implemented_hosted` until the hosted CLI bridge ([enclava-paas#407](https://github.com/enclava-labs/enclava-paas/pull/407)) is deployed. This guide describes the flow once it is.
+
 > **Two guardrails before you start.**
 >
 > 1. **Do not front the app with a TLS-terminating proxy or CDN.** Terminating TLS outside the enclave defeats the confidential-computing guarantee: the proxy would hold the private key and see plaintext traffic. A CNAME pointing at a proxy that re-encrypts is out of contract. Point the domain at Enclava and let the enclave terminate TLS.
