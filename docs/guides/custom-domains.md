@@ -17,14 +17,15 @@ Each app can have one custom domain. Custom domains are not limited by your plan
 
 ## What you publish, and where
 
-You publish two DNS records **in your own zone**, at your own registrar or DNS provider. The `enclava domains add` command prints the exact names and values — use what it prints, not this page (your challenge token and the platform's zone are specific to your app):
+You publish three DNS records **in your own zone**, at your own registrar or DNS provider. The `enclava domains add` command prints the exact names and values — use what it prints, not this page (your challenge token and the platform's zone are specific to your app):
 
 | Record | Name | Value |
 | --- | --- | --- |
 | Ownership TXT | `_enclava-challenge.<your-domain>` | `enclava-domain-verification=<token>` (printed by the CLI) |
 | ACME CNAME | `_acme-challenge.<your-domain>` | `<your-domain>.acme.<platform-zone>` (printed by the CLI) |
+| Routing record | `<your-domain>` | CNAME to your app's platform domain (printed by the CLI); on an apex domain use your provider's ALIAS/ANAME |
 
-The TXT record proves you control the domain. The CNAME delegates the ACME DNS-01 challenge — when Let's Encrypt (or the configured CA) asks for a challenge record under `_acme-challenge.<your-domain>`, your zone answers "ask `<your-domain>.acme.<platform-zone>`", where the platform publishes the challenge answer. Domains that are already inside the platform's zone do not need the CNAME; the CLI prints that record only when it applies.
+The routing record is what sends visitors to your app: without it the domain is verified and has a certificate, but nothing answers on it. The TXT record proves you control the domain. The CNAME delegates the ACME DNS-01 challenge — when Let's Encrypt (or the configured CA) asks for a challenge record under `_acme-challenge.<your-domain>`, your zone answers "ask `<your-domain>.acme.<platform-zone>`", where the platform publishes the challenge answer. Domains that are already inside the platform's zone do not need the CNAME; the CLI prints that record only when it applies.
 
 ## The flow: add → publish → verify → deploy
 
