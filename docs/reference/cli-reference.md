@@ -119,9 +119,7 @@ enclava domains list --app APP [--json]
 enclava domains remove DOMAIN --app APP
 ```
 
-`domains add` creates an ownership challenge and prints **two records to publish in your own zone**: the ownership TXT at `_enclava-challenge.<domain>` (value `enclava-domain-verification=<token>`), and — for domains outside the platform's zone — the ACME DNS-01 CNAME `_acme-challenge.<domain>` pointing at `<domain>.acme.<platform-zone>`. Use the exact names and values the command prints. `domains verify` re-checks the ownership TXT live on every run - and the ACME CNAME where it applies (domains outside the platform's zone) - and must pass before a deploy attaches the domain (see [Custom domains](../guides/custom-domains.md) for the flow and the renewal guardrail).
-
-> **Hosted availability.** On the hosted platform these commands answer `501 not_implemented_hosted` until the hosted CLI bridge ([enclava-paas#407](https://github.com/enclava-labs/enclava-paas/pull/407)) is deployed. Remove this note once it is (tracked in [cap#412](https://github.com/enclava-labs/cap/issues/412)).
+`domains add` creates an ownership challenge and prints **the records to publish in your own zone**: the ownership TXT at `_enclava-challenge.<domain>` (value `enclava-domain-verification=<token>`), for domains outside the platform's zone the ACME DNS-01 CNAME `_acme-challenge.<domain>` pointing at `<domain>.acme.<platform-zone>`, and the routing record that points `<domain>` at the app's platform domain. Use the exact names and values the command prints. `domains verify` re-checks the ownership TXT live on every run - and the ACME CNAME where it applies (domains outside the platform's zone) - and must pass before a deploy attaches the domain (see [Custom domains](../guides/custom-domains.md) for the flow and the renewal guardrail).
 
 `domains add` prints the records as text; it has no `--json` mode (of the `domains` commands, only `domains list` does). `domains verify` fails with `acme_delegation_missing` when the CNAME is missing or points at the wrong target, and the message carries the expected name/target pair.
 

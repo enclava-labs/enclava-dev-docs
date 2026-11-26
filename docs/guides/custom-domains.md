@@ -6,8 +6,6 @@ sidebar_position: 4
 
 Your app gets a platform domain by default (`<app>.<platform-zone>`). With a custom domain you can serve your own hostname — `app.example.com` — on the same confidential deployment. The certificate for it is issued **inside the enclave** via ACME DNS-01: the private key is generated in the TEE and never leaves it. That is the point of the feature — end-to-end TLS with your name, without anyone (including Enclava operators) holding your key.
 
-> **Hosted availability.** On the hosted platform the `enclava domains` commands answer `501 not_implemented_hosted` until the hosted CLI bridge ([enclava-paas#407](https://github.com/enclava-labs/enclava-paas/pull/407)) is deployed. This guide describes the flow once it is. Remove this note once it is (tracked in [cap#412](https://github.com/enclava-labs/cap/issues/412)).
-
 Each app can have one custom domain. Custom domains are not limited by your plan — the plan limits the number of apps.
 
 > **Two guardrails before you start.**
